@@ -1,0 +1,7 @@
+database:
+  mysql:
+    host: "2"
+    port: 2
+    user: "2"
+    passwd: "2"
+    db_name: "2"
