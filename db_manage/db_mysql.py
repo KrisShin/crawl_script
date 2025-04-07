@@ -30,7 +30,7 @@ class MySQLDatabase:
             password=password,
             database=database,
             port=port,
-            charset=charsis工，
+            charset=charset,
             cursorclass=pymysql.cursors.DictCursor
         )
         self.cursor = self.connection.cursor()
