@@ -24,7 +24,7 @@ def main(client: httpx.Client):
         if len(cookies) < 3:
             logger.error(f'获取cookie失败')
             continue
-        logger.success(f'获取cookie成功: {client.headers.raw}')
+        logger.success(f'获取cookie成功: {client.cookies}')
         return True
 
 

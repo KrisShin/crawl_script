@@ -1,21 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-# @Time   :  2022/10/13 16:09
-# @Author :  Allen
 import click
 from tortoise import Tortoise, run_async
 from loguru import logger
 
-from common.global_variant import config
-
-
-async def init_db(create_db=False) -> None:
-    mysql_config = config.get('database.mysql')
-    if not mysql_config:
-        raise Exception('MySQL config load failed.')
-    db_uri = f'mysql://{mysql_config.user}:{mysql_config.passwd}@{mysql_config.host}:{mysql_config.port}/{mysql_config.db_name}'
-    logger.info(f'db_uri: {db_uri}')
-    await Tortoise.init(db_url=db_uri, modules={'models': ["crawl_script.models.snowball"]}, _create_db=create_db)
+from common.global_variant import init_db
 
 
 async def move_time_field(client, apps):
