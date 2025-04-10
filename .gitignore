@@ -3,3 +3,9 @@
 **/*.pyc
 
 config.yaml
+
+# data json files
+data_json
+
+# cache files
+**/.DS_Store
