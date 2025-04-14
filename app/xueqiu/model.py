@@ -2,8 +2,8 @@ from tortoise import fields
 from app.model import BaseModel
 
 
-class SnowBallIndex(BaseModel):
-    """company model"""
+class XueqiuCropIndex(BaseModel):
+    """雪球公司指数模型"""
 
     symbol = fields.CharField(null=False, max_length=64, description='股票代码', db_index=True)
     code = fields.CharField(null=True, max_length=32, description='公司代码', db_index=True)
@@ -20,51 +20,50 @@ class SnowBallIndex(BaseModel):
     index_type = fields.CharField(max_length=16, null=False, db_index=True, description='指数榜单')
 
     class Meta:
-        table = 'snowball_index'
+        table = 'xueqiu_corp_index'
         # unique_together = ('symbol', 'index_type')
+
+
+class XueqiuZHIndex(BaseModel):
+    """雪球组合指数模型"""
+
+    annualized_gain_rate = fields.FloatField(null=True, description='年化收益率')
+    daily_gain = fields.FloatField(null=True, description='日收益')
+    draw_down = fields.FloatField(null=True, description='提取')
+    flowing = fields.BooleanField(null=True, description='流动性')
+    market = fields.CharField(null=True, max_length=8, description='市场')
+    monthly_gain = fields.FloatField(null=True, description='月收益')
+    name = fields.CharField(null=True, max_length=128, description='组合名称')
+    net_value = fields.FloatField(null=True, description='当前净值')
+    owner_id = fields.BigIntField(null=False, description='创建者_id')
+    owner_name = fields.CharField(null=True, max_length=128, description='创建者名字')
+    stock_symbol = fields.CharField(null=True, max_length=128, description='股票代号')
+    stock_symbol_name = fields.CharField(max_length=128, null=False, db_index=True, description='股票名称')
+    symbol = fields.CharField(max_length=16, null=False, db_index=True, description='组合代号')
+    total_gain = fields.FloatField(null=True, db_index=True, description='总收益')
+    weight = fields.FloatField(null=True, db_index=True, description='权重')
+
+    class Meta:
+        table = 'xueqiu_zh_index'
 
 
 '''
 {
-  "symbol": "AREB",  // 股票代码
-  "net_profit_cagr": 16.73625974199162,
-  "north_net_inflow": null,
-  "ps": 0.187147209078715,
-  "type": 0,
-  "percent": 342.96,  // 涨跌幅
-  "has_follow": false,
-  "tick_size": 0.01,
-  "pb_ttm": null,
-  "float_shares": null,
-  "current": 6.29,  // 当前价
-  "amplitude": 502.82,
-  "pcf": null,
-  "current_year_percent": -86.1,  // 年初至今涨跌百分比
-  "float_market_capital": null,
-  "north_net_inflow_time": null,
-  "market_capital": 2660670,  // 市值
-  "dividend_yield": 0,
-  "lot_size": 1,
-  "roe_ttm": -342.3444749365853,
-  "total_percent": null,
-  "percent5m": -11.66,
-  "income_cagr": 113.74731378730888,
-  "amount": 479469734, // 成交额
-  "chg": 4.87, // 涨跌额
-  "issue_date_ts": 1644163200000, //
-  "eps": -37.40664539007092,
-  "main_net_inflows": 8501072,
-  "volume": 77943943,  // 成交量
-  "volume_ratio": 7.41,  // 成交量占比
-  "pb": null,
-  "followers": 124,
-  "turnover_rate": 18426.46,  // 换手率
-  "mapping_quote_current": null,
-  "first_percent": null,
-  "name": "American Rebel",  // 公司名
-  "pe_ttm": null,
-  "dual_counter_mapping_symbol": null,
-  "total_shares": 423000,
-  "limitup_days": null
+  "annualized_gain_rate": 82.2,
+  "daily_gain": 1.29,
+  "draw_down": null,
+  "flowing": false,
+  "id": 642832,
+  "market": "cn",
+  "monthly_gain": 1.31,
+  "name": "永远的价值投资",
+  "net_value": 8.9609,
+  "owner_id": 9522147036,
+  "owner_name": "ZZ贵州茅台价值之道",
+  "stock_symbol": "SH600519",
+  "stock_symbol_name": "贵州茅台",
+  "symbol": "ZH642930",
+  "total_gain": 796.09,
+  "weight": null
 }
 '''
