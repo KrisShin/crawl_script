@@ -12,7 +12,7 @@ def main(db_type: str):
 
 if __name__ == '__main__':
     main('mysql')
-    from app.xueqiu.main import crawl_index, crawl_zh, crawl_zh_async
-
+    from app.xueqiu.main import crawl_index, crawl_zh, crawl_zh_async, crawl_zh_history_async
     # crawl_zh()
-    asyncio.run(crawl_zh_async())
+    # asyncio.run(crawl_zh_async())
+    asyncio.run(crawl_zh_history_async())
