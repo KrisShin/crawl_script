@@ -119,7 +119,7 @@ async def crawl_zh_history_task(zh_id: int, max_id: int, semaphore: asyncio.Sema
             print(f"任务失败 zh_id={zh_id}: {e}")
 
 
-async def crawl_zh_history_async(zh_id: int = 100389, max_id: int = 25800000):
+async def crawl_zh_history_async(zh_id: int = 105040, max_id: int = 25800000):
     # zh_id = 105040
     # max_id = 150000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID

@@ -13,10 +13,10 @@ def connect_db(db_type: str):
 
 
 @click.command()
-@click.argument('spider_name', type=click.Choice(['index', 'zh', 'zh_async', 'zh_history_async'], case_sensitive=False))
+@click.argument('spider_name', type=click.Choice(['index', 'zh_single', 'zh', 'zh_his'], case_sensitive=False))
 @click.argument('start_id', type=int)
 @click.argument('end_id', type=int)
-def run_spider(spider_name, start_id, end_id):
+def run_spider(spider_name, start_id: int, end_id: int):
     """
     启动爬虫脚本。
 
