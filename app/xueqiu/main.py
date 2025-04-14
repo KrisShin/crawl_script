@@ -68,14 +68,13 @@ async def crawl_zh_task(zh_id: int, max_id: int, semaphore: asyncio.Semaphore):
             print(f"任务失败 zh_id={zh_id}: {e}")
 
 
-async def crawl_zh_async(zh_id: int = 100389, max_id: int = 25800000):
+async def crawl_zh_async(zh_id: int = 100389, max_id: int = 25800000, coroutine: int = 30):
     # zh_id = 100389
     # max_id = 127000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID
     step = 5  # 每个协程爬取的 ID 范围
-    max_concurrent_tasks = 30  # 限制同时运行的协程数量
 
-    semaphore = asyncio.Semaphore(max_concurrent_tasks)  # 创建信号量
+    semaphore = asyncio.Semaphore(coroutine)  # 创建信号量
     tasks = []
 
     while zh_id < max_id:
@@ -119,14 +118,13 @@ async def crawl_zh_history_task(zh_id: int, max_id: int, semaphore: asyncio.Sema
             print(f"任务失败 zh_id={zh_id}: {e}")
 
 
-async def crawl_zh_history_async(zh_id: int = 105040, max_id: int = 25800000):
+async def crawl_zh_history_async(zh_id: int = 105040, max_id: int = 25800000, coroutine: int = 5):
     # zh_id = 105040
     # max_id = 150000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID
     step = 5  # 每个协程爬取的 ID 范围
-    max_concurrent_tasks = 10  # 限制同时运行的协程数量
 
-    semaphore = asyncio.Semaphore(max_concurrent_tasks)  # 创建信号量
+    semaphore = asyncio.Semaphore(coroutine)  # 创建信号量
     tasks = []
 
     while zh_id < max_id:
