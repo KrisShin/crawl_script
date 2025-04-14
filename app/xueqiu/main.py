@@ -37,6 +37,7 @@ def crawl_zh():
                 spider.crawl(zh_id=zh_id, max_id=zh_id + 10)
                 zh_id += step
 
+
 async def crawl_zh_task(zh_id: int, max_id: int, semaphore: asyncio.Semaphore):
     """单个任务的异步爬取逻辑"""
     async with semaphore:
@@ -48,10 +49,10 @@ async def crawl_zh_task(zh_id: int, max_id: int, semaphore: asyncio.Semaphore):
                         if await cookie_spider(client):
                             break  # 成功获取 cookie，退出循环
                         else:
-                            print(f"cookie_spider 失败，等待 10 秒后重试 zh_id={zh_id}")
+                            print(f"cookie_spider 失败，等待 20 秒后重试 zh_id={zh_id}")
                             await asyncio.sleep(20)
                     except Exception as e:
-                        print(f"cookie_spider 异常，等待 10 秒后重试 zh_id={zh_id}: {e}")
+                        print(f"cookie_spider 异常，等待 20 秒后重试 zh_id={zh_id}: {e}")
                         await asyncio.sleep(20)
 
                 # 执行爬取任务
@@ -64,6 +65,7 @@ async def crawl_zh_task(zh_id: int, max_id: int, semaphore: asyncio.Semaphore):
 async def crawl_zh_async():
     zh_id = 100389
     max_id = 127000  # 限制最大 ID
+    # max_id = 25800000  # 真实最大 ID
     step = 5  # 每个协程爬取的 ID 范围
     max_concurrent_tasks = 30  # 限制同时运行的协程数量
 
