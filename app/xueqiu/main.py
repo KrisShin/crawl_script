@@ -1,9 +1,8 @@
 import asyncio
 import httpx
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from app.xueqiu.cookie_spider import main as cookie_spider
 from app.xueqiu.index_spider import XueqiuIndexSpider
-from app.xueqiu.zh_hostry_rank_spider import XueqiuZHHistorySpider
+from app.xueqiu.zh_hostry_spider import XueqiuZHHistorySpider
 from app.xueqiu.zh_index_spider import XueqiuZHSpider
 from common.global_variant import proxies
 

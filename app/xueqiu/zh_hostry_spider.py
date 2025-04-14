@@ -35,6 +35,9 @@ class XueqiuZHHistorySpider(BaseSpider):
             try:
                 resp = await self.client.get(index_url, headers={'User-Agent': ua.random}, timeout=30)
                 if resp.status_code != 200:
+                    if '该组合不存在' in resp.text:
+                        zh_id += 1
+                        continue
                     logger.error(f'获取组合历史数据失败: {resp.status_code}, {resp.text}')
                     continue
                 data = resp.json()
