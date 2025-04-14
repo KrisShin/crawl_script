@@ -1,4 +1,5 @@
 import random
+import time
 import httpx
 from loguru import logger
 from common.global_variant import ua
@@ -30,6 +31,7 @@ async def main(client: httpx.AsyncClient):
             if try_times > 5:
                 logger.error(f'获取cookie失败: {e}')
                 return False
+            time.sleep(5)
             continue
         cookies = [x for x in resp.headers.raw if b'Set-Cookie' in x]
         if len(cookies) < 3:
