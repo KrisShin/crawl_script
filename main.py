@@ -17,7 +17,7 @@ def connect_db(db_type: str):
 @click.argument('start_id', type=int)
 @click.argument('end_id', type=int)
 @click.argument('coroutine_count', type=int)
-def run_spider(spider_name, start_id: int, end_id: int, coroutine: int):
+def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
     """
     启动爬虫脚本。
 
@@ -33,9 +33,9 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine: int):
     elif spider_name == 'zh_single':
         crawl_zh()  # 单线程爬取
     elif spider_name == 'zh':
-        asyncio.run(crawl_zh_async(start_id, end_id, coroutine))
+        asyncio.run(crawl_zh_async(start_id, end_id, coroutine_count))
     elif spider_name == 'zh_his':
-        asyncio.run(crawl_zh_history_async(start_id, end_id, coroutine))
+        asyncio.run(crawl_zh_history_async(start_id, end_id, coroutine_count))
     else:
         logger.error(f"未知的爬虫名称: {spider_name}")
 
