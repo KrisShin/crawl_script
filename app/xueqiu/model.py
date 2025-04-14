@@ -27,25 +27,24 @@ class XueqiuCropIndex(BaseModel):
 class XueqiuZHIndex(BaseModel):
     """雪球组合指数模型"""
 
-    annualized_gain_rate = fields.CharField(null=False, max_length=64, description='年化收益率')
-    daily_gain = fields.CharField(null=True, max_length=32, description='日收益')
-    draw_down = fields.CharField(null=True, max_length=1024, description='提取')
-    flowing = fields.FloatField(null=True, description='流动性')
-    market = fields.FloatField(null=True, description='市场')
+    annualized_gain_rate = fields.FloatField(null=True, description='年化收益率')
+    daily_gain = fields.FloatField(null=True, description='日收益')
+    draw_down = fields.FloatField(null=True, description='提取')
+    flowing = fields.BooleanField(null=True, description='流动性')
+    market = fields.CharField(null=True, max_length=8, description='市场')
     monthly_gain = fields.FloatField(null=True, description='月收益')
-    name = fields.FloatField(null=True, description='组合名称')
+    name = fields.CharField(null=True, max_length=128, description='组合名称')
     net_value = fields.FloatField(null=True, description='当前净值')
-    owner_id = fields.FloatField(null=True, description='创建者_id')
-    owner_name = fields.FloatField(null=True, description='创建者名字')
-    stock_symbol = fields.FloatField(null=True, description='股票代号')
-    stock_symbol_name = fields.CharField(max_length=16, null=False, db_index=True, description='股票名称')
+    owner_id = fields.BigIntField(null=False, description='创建者_id')
+    owner_name = fields.CharField(null=True, max_length=128, description='创建者名字')
+    stock_symbol = fields.CharField(null=True, max_length=128, description='股票代号')
+    stock_symbol_name = fields.CharField(max_length=128, null=False, db_index=True, description='股票名称')
     symbol = fields.CharField(max_length=16, null=False, db_index=True, description='组合代号')
-    total_gain = fields.CharField(max_length=16, null=False, db_index=True, description='总收益')
-    weight = fields.CharField(max_length=16, null=False, db_index=True, description='权重')
+    total_gain = fields.FloatField(null=True, db_index=True, description='总收益')
+    weight = fields.FloatField(null=True, db_index=True, description='权重')
 
     class Meta:
         table = 'xueqiu_zh_index'
-        # unique_together = ('symbol', 'index_type')
 
 
 '''

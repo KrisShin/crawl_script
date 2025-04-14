@@ -14,12 +14,23 @@ md5_list = [
 ]
 
 
-def main(client: httpx.Client):
+async def main(client: httpx.AsyncClient):
+    try_times = 0
     while True:
         md5_str = random.choice(md5_list)
-        resp = client.get(
-            cookie_url + md5_str, headers={'User-Agent': ua.chrome, 'Host': 'xueqiu.com', 'origin': 'https://xueqiu.com'}, timeout=30
-        )  # httpx会自动管理获取的cookie
+        try:
+            resp = await client.get(
+                cookie_url + md5_str,
+                headers={'User-Agent': ua.chrome, 'Host': 'xueqiu.com', 'origin': 'https://xueqiu.com'},
+                timeout=30,
+            )  # httpx会自动管理获取的cookie
+        except httpx.RequestError as e:
+            logger.error(f'获取cookie失败: {e}')
+            try_times += 1
+            if try_times > 5:
+                logger.error(f'获取cookie失败: {e}')
+                return False
+            continue
         cookies = [x for x in resp.headers.raw if b'Set-Cookie' in x]
         if len(cookies) < 3:
             logger.error(f'获取cookie失败')
@@ -31,5 +42,8 @@ def main(client: httpx.Client):
 if __name__ == '__main__':
     from common.global_variant import proxies
 
-    with httpx.Client(proxies=proxies) as client:
-        main(client)
+    async def run():
+        async with httpx.AsyncClient(proxies=proxies) as client:
+            await main(client)
+    import asyncio
+    asyncio.run(run())
