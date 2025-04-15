@@ -25,17 +25,15 @@ async def main(client: httpx.AsyncClient):
                 headers={'User-Agent': ua.chrome, 'Host': 'xueqiu.com', 'origin': 'https://xueqiu.com'},
                 timeout=30,
             )  # httpx会自动管理获取的cookie
+            cookies = [x for x in resp.headers.raw if b'Set-Cookie' in x]
+            if len(cookies) < 3:
+                raise Exception()
         except httpx.RequestError as e:
             logger.error(f'获取cookie失败: {e}')
             try_times += 1
             if try_times > 5:
-                logger.error(f'获取cookie失败: {e}')
                 return False
-            time.sleep(5)
-            continue
-        cookies = [x for x in resp.headers.raw if b'Set-Cookie' in x]
-        if len(cookies) < 3:
-            logger.error(f'获取cookie失败')
+            time.sleep(3)
             continue
         logger.success(f'获取cookie成功: {client.cookies}')
         return True
