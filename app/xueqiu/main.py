@@ -51,11 +51,11 @@ async def crawl_zh_task(zh_id: int, max_id: int, semaphore: asyncio.Semaphore):
                         else:
                             print(f"cookie_spider 失败，等待 20 秒后重试 zh_id={zh_id}")
                             await asyncio.sleep(20)
-                            client = await httpx.AsyncClient(proxies=proxies)
+                            client = await httpx.AsyncClient(proxy=proxies)
                     except Exception as e:
                         print(f"cookie_spider 异常，等待 20 秒后重试 zh_id={zh_id}: {e}")
                         await asyncio.sleep(20)
-                        client = await httpx.AsyncClient(proxies=proxies)
+                        client = await httpx.AsyncClient(proxy=proxies)
                 # 执行爬取任务
                 spider = XueqiuZHSpider(client)
                 await spider.crawl(zh_id=zh_id, max_id=max_id)
@@ -100,11 +100,11 @@ async def crawl_zh_history_task(zh_id: int, max_id: int, semaphore: asyncio.Sema
                         else:
                             print(f"cookie_spider 失败，等待 20 秒后重试 zh_id={zh_id}")
                             await asyncio.sleep(20)
-                            client = await httpx.AsyncClient(proxies=proxies)
+                            client = await httpx.AsyncClient(proxy=proxies)
                     except Exception as e:
                         print(f"cookie_spider 异常，等待 20 秒后重试 zh_id={zh_id}: {e}")
                         await asyncio.sleep(20)
-                        client = await httpx.AsyncClient(proxies=proxies)
+                        client = await httpx.AsyncClient(proxy=proxies)
 
                 # 执行爬取任务
                 spider = XueqiuZHHistorySpider(client)
