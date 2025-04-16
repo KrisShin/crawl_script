@@ -51,7 +51,7 @@ class XueqiuZHSpider(BaseSpider):
                 zh_id += 1
             except Exception as e:
                 logger.error(f'请求失败: {e}')
-                break
+                continue
         logger.success(f'获取指数数据完成')
 
 

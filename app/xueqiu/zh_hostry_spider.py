@@ -51,7 +51,7 @@ class XueqiuZHHistorySpider(BaseSpider):
                 zh_id += 1
             except Exception as e:
                 logger.error(f'请求失败: {e}')
-                break
+                continue
         await self.save(history_list)
         # logger.success(f'获取组合历史数据完成')
 
