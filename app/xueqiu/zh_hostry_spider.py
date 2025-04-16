@@ -3,6 +3,7 @@ import random
 import httpx
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import UpdateOne
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuZHHistory
@@ -60,8 +61,19 @@ class XueqiuZHHistorySpider(BaseSpider):
         # logger.success(f'获取组合历史数据完成')
         if history_list:
             try:
-                await self.collection.insert_many(history_list)
-                logger.success(f"成功保存 {len(history_list)} 条数据到 MongoDB")
+                # 构建批量操作列表
+                operations = [
+                    UpdateOne(
+                        {"symbol": item["symbol"]},  # 查询条件，确保 symbol 唯一
+                        {"$set": item},  # 更新内容
+                        upsert=True,  # 如果不存在则插入
+                    )
+                    for item in history_list
+                ]
+                # 批量执行操作
+                if operations:
+                    result = await self.collection.bulk_write(operations, ordered=False)
+                    logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB")
             except Exception as e:
                 logger.error(f"保存到 MongoDB 失败: {e}")
 
