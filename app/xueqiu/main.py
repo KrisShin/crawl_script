@@ -71,7 +71,7 @@ async def crawl_zh_async(zh_id: int = 100389, max_id: int = 25800000, coroutine:
     # zh_id = 100389
     # max_id = 127000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID
-    step = 5  # 每个协程爬取的 ID 范围
+    step = 10  # 每个协程爬取的 ID 范围
 
     semaphore = asyncio.Semaphore(coroutine)  # 创建信号量
     tasks = []
@@ -121,7 +121,7 @@ async def crawl_zh_history_async(zh_id: int = 105040, max_id: int = 25800000, co
     # zh_id = 105040
     # max_id = 150000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID
-    step = 5  # 每个协程爬取的 ID 范围
+    step = 10  # 每个协程爬取的 ID 范围
 
     semaphore = asyncio.Semaphore(coroutine)  # 创建信号量
     tasks = []
