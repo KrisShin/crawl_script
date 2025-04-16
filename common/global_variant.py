@@ -19,7 +19,7 @@ proxies = httpx.Proxy(url=proxy_url)
 ua = UserAgent()
 
 
-mongo_config = config.get('database.mongo')
+mongo_config = config.get('database.mongodb')
 
 mongo_uri = 'mongodb://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db_name)s' % {
     "user": mongo_config.user,
