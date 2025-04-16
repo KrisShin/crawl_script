@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import random
 import httpx
@@ -61,11 +62,12 @@ class XueqiuZHHistorySpider(BaseSpider):
         # logger.success(f'获取组合历史数据完成')
         if history_list:
             try:
+                update_time = datetime.now()
                 # 构建批量操作列表
                 operations = [
                     UpdateOne(
                         {"symbol": item["symbol"]},  # 查询条件，确保 symbol 唯一
-                        {"$set": item},  # 更新内容
+                        {"$set": {**item, "update_time": update_time}},  # 更新内容
                         upsert=True,  # 如果不存在则插入
                     )
                     for item in history_list
