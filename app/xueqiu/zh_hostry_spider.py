@@ -2,10 +2,11 @@ import json
 import random
 import httpx
 from loguru import logger
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuZHHistory
-from common.global_variant import ua
+from common.global_variant import ua, mongo_uri, mongo_config
 
 md5_list = [
     'n4%2Bx0DyDgiGQi%3DDCzYDsI3xxAOqIx0KqPiY%2B6Qx',
@@ -16,7 +17,7 @@ md5_list = [
     'eqGxBDRCi%3DeUD%2FY0xBKD%3DyPY5uIijjGioD',
     'n40xyDuGG%3DdDuq0vd4%2B2DAxqfxmqEqiIp03edx',
     'n4RhAKYKGKBKD5GQGODlxGEI8Lc2epieZiAoD',
-    'eqGxR7D%3DG%3Dq4uDBwe5GkbE5AKitDCYz%2Fj%2FfeD'
+    'eqGxR7D%3DG%3Dq4uDBwe5GkbE5AKitDCYz%2Fj%2FfeD',
 ]
 
 
@@ -27,6 +28,9 @@ class XueqiuZHHistorySpider(BaseSpider):
         super().__init__(client=client, model=XueqiuZHHistory)
         self.base_url = 'https://xueqiu.com/cubes/nav_daily/all.json?cube_symbol=%s&md5__1038=%s'
         self.rank_url = 'https://xueqiu.com/cubes/data/rank_percent.json?cube_symbol=%s&cube_id=642832&market=cn&dimension=annual&_=1744359803108&md5__1038=%s'
+        self.mongo_client = AsyncIOMotorClient(mongo_uri)
+        self.db = self.mongo_client[mongo_config.db_name]
+        self.collection = self.db["zh_history"]
 
     async def crawl(self, zh_id: int, max_id: int):
         history_list = []
@@ -52,8 +56,14 @@ class XueqiuZHHistorySpider(BaseSpider):
             except Exception as e:
                 logger.error(f'请求失败: {e}')
                 continue
-        await self.save(history_list)
+        # await self.save(history_list)
         # logger.success(f'获取组合历史数据完成')
+        if history_list:
+            try:
+                await self.collection.insert_many(history_list)
+                logger.success(f"成功保存 {len(history_list)} 条数据到 MongoDB")
+            except Exception as e:
+                logger.error(f"保存到 MongoDB 失败: {e}")
 
 
 if __name__ == '__main__':

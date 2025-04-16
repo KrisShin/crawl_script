@@ -19,6 +19,17 @@ proxies = httpx.Proxy(url=proxy_url)
 ua = UserAgent()
 
 
+mongo_config = config.get('database.mongo')
+
+mongo_uri = 'mongodb://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db_name)s' % {
+    "user": mongo_config.user,
+    "passwd": mongo_config.passwd,
+    "host": mongo_config.host,
+    "port": mongo_config.port,
+    "db_name": mongo_config.db_name,
+}
+
+
 async def init_db(create_db=False) -> None:
     mysql_config = config.get('database.mysql')
     if not mysql_config:
