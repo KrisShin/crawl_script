@@ -35,7 +35,6 @@ class XueqiuZHHistorySpider(BaseSpider):
         self.collection = self.db["zh_history"]
 
     async def crawl(self, zh_id: int, max_id: int):
-        history_list = []
         while zh_id < max_id:
             index_url = self.base_url % (f'ZH{zh_id}', random.choice(md5_list))
             try:
@@ -51,7 +50,11 @@ class XueqiuZHHistorySpider(BaseSpider):
                 resp_data['history'] = json.dumps(resp_data.pop('list'))
                 logger.success(f'获取组合历史数据成功: ZHID:{zh_id}, crawled:1')
                 # await self.replace([resp_data])
-                history_list.append(resp_data)
+                await self.collection.update_one(
+                    {"symbol": resp_data["symbol"]},  # 查询条件，确保 symbol 唯一
+                    {"$set": {**resp_data, "update_time": datetime.now()}},  # 更新内容
+                    upsert=True,  # 如果不存在则插入
+                )
                 # with open(f'xueqiu_zh_id', 'a') as f:
                 #     f.write(f'ZH{zh_id}\n')
                 zh_id += 1
@@ -60,24 +63,6 @@ class XueqiuZHHistorySpider(BaseSpider):
                 continue
         # await self.save(history_list)
         # logger.success(f'获取组合历史数据完成')
-        if history_list:
-            try:
-                update_time = datetime.now()
-                # 构建批量操作列表
-                operations = [
-                    UpdateOne(
-                        {"symbol": item["symbol"]},  # 查询条件，确保 symbol 唯一
-                        {"$set": {**item, "update_time": update_time}},  # 更新内容
-                        upsert=True,  # 如果不存在则插入
-                    )
-                    for item in history_list
-                ]
-                # 批量执行操作
-                if operations:
-                    result = await self.collection.bulk_write(operations, ordered=False)
-                    logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB")
-            except Exception as e:
-                logger.error(f"保存到 MongoDB 失败: {e}")
 
 
 if __name__ == '__main__':
