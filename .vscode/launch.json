@@ -8,7 +8,7 @@
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
-            "program": "main.py",
+            "program": "main.py zh_his 270000 270001 1",
             "console": "integratedTerminal"
         }
     ]
