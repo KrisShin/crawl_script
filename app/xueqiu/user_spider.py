@@ -4,7 +4,6 @@ import random
 import httpx
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import UpdateOne
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuUser
@@ -59,7 +58,7 @@ class XueqiuUserSpider(BaseSpider):
             try:
                 mongo_client = AsyncIOMotorClient(mongo_uri)
                 db = mongo_client[mongo_config.db_name]
-                collection = db["zh_history"]
+                collection = db["user"]
                 result = await collection.insert_many(user_list, ordered=False)
                 logger.success(f"成功保存 {result.inserted_ids} 条数据到 MongoDB")
                 mongo_client.close()
