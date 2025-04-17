@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 import random
 import httpx
 from loguru import logger
@@ -60,7 +59,7 @@ class XueqiuUserSpider(BaseSpider):
                 db = mongo_client[mongo_config.db_name]
                 collection = db["user"]
                 result = await collection.insert_many(user_list, ordered=False)
-                logger.success(f"成功保存 {result.inserted_ids} 条数据到 MongoDB")
+                logger.success(f"成功保存 {len(result.inserted_ids)} 条数据到 MongoDB")
                 mongo_client.close()
             except Exception as e:
                 from traceback import print_exc

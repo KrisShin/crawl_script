@@ -4,9 +4,10 @@ from loguru import logger
 
 from app.xueqiu.cookie_spider import main as cookie_spider
 from app.xueqiu.index_spider import XueqiuIndexSpider
+from app.xueqiu.user_spider import XueqiuUserSpider
 from app.xueqiu.zh_hostry_spider import XueqiuZHHistorySpider
 from app.xueqiu.zh_index_spider import XueqiuZHSpider
-from common.global_variant import proxies, user_id_list
+from common.global_variant import proxies
 
 TYPE_MARKET_MAPPING = {
     'sh_sz': 'CN',
@@ -159,8 +160,8 @@ async def crawl_user_task(u_id: int, max_id: int, semaphore: asyncio.Semaphore):
                         client = await httpx.AsyncClient(proxy=proxies)
 
                 # 执行爬取任务
-                spider = XueqiuZHHistorySpider(client)
-                await spider.crawl(zh_id=u_id, max_id=max_id)
+                spider = XueqiuUserSpider(client)
+                await spider.crawl(u_id=u_id, max_id=max_id)
             try:
                 await client.close()
             except:
@@ -169,14 +170,14 @@ async def crawl_user_task(u_id: int, max_id: int, semaphore: asyncio.Semaphore):
             print(f"任务失败 zh_id={u_id}: {e}")
 
 
-async def crawl_user_async(u_id: int = 0, max_id: int = 0, coroutine: int = 5):
+async def crawl_user_async(u_id: int = 0, max_id: int = 204471, coroutine: int = 5):
     # zh_id = 105040
     # max_id = 150000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID
     if not max_id or max_id < u_id:
         logger.error("max_id 必须大于 u_id")
         return
-    step = 1  # 每个协程爬取的 ID 范围
+    step = 10  # 每个协程爬取的 ID 范围
 
     semaphore = asyncio.Semaphore(coroutine)  # 创建信号量
     tasks = []
