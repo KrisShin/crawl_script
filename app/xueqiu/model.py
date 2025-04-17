@@ -57,23 +57,117 @@ class XueqiuZHHistory(BaseModel):
         table = 'xueqiu_zh_history'
 
 
+class XueqiuUser(BaseModel):
+    """雪球用户模型"""
+
+    name = fields.CharField(null=True, max_length=128, description="用户名")
+    province = fields.CharField(null=True, max_length=32, description="省份")
+    city = fields.CharField(null=True, max_length=32, description="城市")
+    location = fields.CharField(null=True, max_length=128, description="位置")
+    description = fields.TextField(null=True, description="描述")
+    url = fields.CharField(null=True, max_length=256, description="个人主页URL")
+    domain = fields.CharField(null=True, max_length=64, description="域名")
+    gender = fields.CharField(null=True, max_length=1, description="性别")
+    verified = fields.BooleanField(null=True, description="是否认证")
+    type = fields.CharField(null=True, max_length=8, description="用户类型")
+    step = fields.CharField(null=True, max_length=16, description="用户阶段")
+    profile = fields.CharField(null=True, max_length=256, description="用户主页路径")
+    recommend = fields.CharField(null=True, max_length=256, description="推荐信息")
+    intro = fields.TextField(null=True, description="简介")
+    status = fields.IntField(null=True, description="状态")
+    following = fields.BooleanField(null=True, description="是否关注")
+    blocking = fields.BooleanField(null=True, description="是否屏蔽")
+    subscribeable = fields.BooleanField(null=True, description="是否可订阅")
+    remark = fields.TextField(null=True, description="备注")
+    constrained = fields.IntField(null=True, description="限制状态")
+    screen_name = fields.CharField(null=True, max_length=128, description="显示名称")
+    created_at = fields.BigIntField(null=True, description="创建时间戳")
+    followers_count = fields.IntField(null=True, description="粉丝数")
+    friends_count = fields.IntField(null=True, description="关注数")
+    status_count = fields.IntField(null=True, description="帖子数")
+    last_status_id = fields.BigIntField(null=True, description="最后状态ID")
+    blog_description = fields.TextField(null=True, description="博客描述")
+    st_color = fields.CharField(null=True, max_length=8, description="状态颜色")
+    stocks_count = fields.IntField(null=True, description="持股数")
+    cube_count = fields.IntField(null=True, description="组合数")
+    donate_count = fields.IntField(null=True, description="捐赠数")
+    verified_type = fields.IntField(null=True, description="认证类型")
+    verified_description = fields.TextField(null=True, description="认证描述")
+    verified_realname = fields.BooleanField(null=True, description="是否实名认证")
+    stock_status_count = fields.IntField(null=True, description="股票状态数")
+    follow_me = fields.BooleanField(null=True, description="是否关注我")
+    allow_all_stock = fields.BooleanField(null=True, description="是否允许所有股票")
+    name_pinyin = fields.CharField(null=True, max_length=128, description="用户名拼音")
+    screenname_pinyin = fields.CharField(null=True, max_length=128, description="显示名称拼音")
+    group_ids = fields.JSONField(null=True, description="分组ID")
+    common_count = fields.IntField(null=True, description="共同点数量")
+    recommend_reason = fields.TextField(null=True, description="推荐理由")
+    verified_infos = fields.JSONField(null=True, description="认证信息")
+    select_company_background = fields.TextField(null=True, description="公司背景")
+    select_company_banners = fields.JSONField(null=True, description="公司横幅")
+    privacy_agreement = fields.TextField(null=True, description="隐私协议")
+    ip_location = fields.CharField(null=True, max_length=128, description="IP位置")
+    reg_time = fields.BigIntField(null=True, description="注册时间")
+    national_network_verify = fields.TextField(null=True, description="国家网络认证")
+    photo_domain = fields.CharField(null=True, max_length=256, description="头像域名")
+    profile_image_url = fields.TextField(null=True, description="头像URL")
+
+    class Meta:
+        table = "xueqiu_user"
+
 '''
 {
-  "annualized_gain_rate": 82.2,
-  "daily_gain": 1.29,
-  "draw_down": null,
-  "flowing": false,
-  "id": 642832,
-  "market": "cn",
-  "monthly_gain": 1.31,
-  "name": "永远的价值投资",
-  "net_value": 8.9609,
-  "owner_id": 9522147036,
-  "owner_name": "ZZ贵州茅台价值之道",
-  "stock_symbol": "SH600519",
-  "stock_symbol_name": "贵州茅台",
-  "symbol": "ZH642930",
-  "total_gain": 796.09,
-  "weight": null
+    "id": 9522147036,
+    "name": null,
+    "province": "贵州",
+    "city": "遵义",
+    "location": null,
+    "description": "",
+    "url": null,
+    "domain": null,
+    "gender": "m",
+    "verified": false,
+    "type": "1",
+    "step": "three",
+    "profile": "/9522147036",
+    "recommend": null,
+    "intro": null,
+    "status": 1,
+    "following": false,
+    "blocking": false,
+    "subscribeable": false,
+    "remark": null,
+    "constrained": 0,
+    "screen_name": "ZZ贵州茅台价值之道",
+    "created_at": 1355461673627,
+    "followers_count": 9842,
+    "friends_count": 62,
+    "status_count": 367,
+    "last_status_id": 331916355,
+    "blog_description": null,
+    "st_color": "1",
+    "stocks_count": 14,
+    "cube_count": 1,
+    "donate_count": 0,
+    "verified_type": 0,
+    "verified_description": null,
+    "verified_realname": false,
+    "stock_status_count": null,
+    "follow_me": false,
+    "allow_all_stock": false,
+    "name_pinyin": null,
+    "screenname_pinyin": null,
+    "group_ids": null,
+    "common_count": 0,
+    "recommend_reason": null,
+    "verified_infos": [],
+    "select_company_background": null,
+    "select_company_banners": null,
+    "privacy_agreement": null,
+    "ip_location": "贵州",
+    "reg_time": 0,
+    "national_network_verify": null,
+    "photo_domain": "//xavatar.imedao.com/",
+    "profile_image_url": "community/20131/1360865157600-1360865175892.png,community/20131/1360865157600-1360865175892.png!180x180.png,community/20131/1360865157600-1360865175892.png!50x50.png,community/20131/1360865157600-1360865175892.png!30x30.png"
 }
 '''

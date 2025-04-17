@@ -1,3 +1,4 @@
+import json
 import httpx
 from fake_useragent import UserAgent
 from loguru import logger
@@ -28,6 +29,10 @@ mongo_uri = 'mongodb://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db_name)s' % {
     "port": mongo_config.port,
     "db_name": mongo_config.db_name,
 }
+
+user_id_list = []
+with open('./user_id.json', 'r') as f:
+    user_id_list = json.load(f)
 
 
 async def init_db(create_db=False) -> None:
