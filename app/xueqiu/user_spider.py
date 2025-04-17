@@ -65,13 +65,13 @@ class XueqiuUserSpider(BaseSpider):
                 # 批量执行操作
                 if operations:
                     result = await collection.bulk_write(operations, ordered=False)
-                    logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB")
+                    logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB max_id: {max_id}")
                 mongo_client.close()
             except Exception as e:
                 from traceback import print_exc
 
                 print_exc()
-                logger.error(f"保存到 MongoDB 失败: {e}")
+                logger.error(f"保存到 MongoDB 失败: {e} max_id: {max_id}")
 
 
 if __name__ == '__main__':
