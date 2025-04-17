@@ -3,6 +3,7 @@ import random
 import httpx
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import UpdateOne
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuUser
@@ -41,9 +42,11 @@ class XueqiuUserSpider(BaseSpider):
                 resp = await self.client.get(index_url, headers={'User-Agent': ua.random}, timeout=30)
                 if resp.status_code != 200:
                     logger.error(f'获取用户数据失败: {resp.status_code}, {resp.text}')
+                    if '用户不存在' in resp.text:
+                        u_id += 1
                     continue
                 user_data = resp.json()
-                logger.success(f'获取用户数据成功: ID:{user_id}')
+                logger.success(f'获取用户数据成功: index:{u_id} ID:{user_id}')
                 user_list.append({**user_data, "crawl_time": crawl_time})
                 # with open(f'xueqiu_zh_id', 'a') as f:
                 #     f.write(f'ZH{zh_id}\n')
@@ -59,7 +62,11 @@ class XueqiuUserSpider(BaseSpider):
                 db = mongo_client[mongo_config.db_name]
                 collection = db["user"]
                 result = await collection.insert_many(user_list, ordered=False)
-                logger.success(f"成功保存 {len(result.inserted_ids)} 条数据到 MongoDB")
+                operations = [UpdateOne({"id": item["id"]}, {"$set": item}, upsert=True) for item in user_list]
+                # 批量执行操作
+                if operations:
+                    result = await collection.bulk_write(operations, ordered=False)
+                    logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB")
                 mongo_client.close()
             except Exception as e:
                 from traceback import print_exc

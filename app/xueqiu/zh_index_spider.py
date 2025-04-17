@@ -50,7 +50,10 @@ class XueqiuZHSpider(BaseSpider):
                 #     f.write(f'ZH{zh_id}\n')
                 zh_id += 1
             except Exception as e:
-                logger.error(f'请求失败: {e}')
+                from traceback import print_exc
+
+                print_exc()
+                logger.error(f'请求失败: zhid{zh_id} {e}')
                 continue
         logger.success(f'获取指数数据完成')
 
