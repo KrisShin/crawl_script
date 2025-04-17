@@ -61,7 +61,6 @@ class XueqiuUserSpider(BaseSpider):
                 mongo_client = AsyncIOMotorClient(mongo_uri)
                 db = mongo_client[mongo_config.db_name]
                 collection = db["user"]
-                result = await collection.insert_many(user_list, ordered=False)
                 operations = [UpdateOne({"id": item["id"]}, {"$set": item}, upsert=True) for item in user_list]
                 # 批量执行操作
                 if operations:
