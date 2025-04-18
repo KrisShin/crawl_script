@@ -3,8 +3,7 @@ import time
 import random
 import httpx
 from loguru import logger
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import UpdateOne
+from pymongo import UpdateOne, MongoClient
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuRebalancing
@@ -34,7 +33,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
         super().__init__(client=client, model=XueqiuRebalancing)
         self.base_url = 'https://xueqiu.com/cubes/rebalancing/history.json?cube_symbol=%s&count=50&page=%d&md5__1038=%s'
 
-    async def crawl(self, zh_index: int, max_index: int):
+    def crawl(self, zh_index: int, max_index: int):
         rebalancing_list = []
         while zh_index < max_index:
             page = 1
@@ -43,7 +42,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
             while page <= max_page:
                 index_url = self.base_url % (symbol_all_list[zh_index], page, random.choice(md5_list))
                 try:
-                    resp = await self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': cookie}, timeout=30)
+                    resp = self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': cookie}, timeout=30)
                     if resp.status_code != 200:
                         logger.error(
                             f'获取组合调仓数据失败: index:{zh_index}, zh_id:{symbol_all_list[zh_index]} code: {resp.status_code}, {resp.text}'
@@ -69,7 +68,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
         # logger.success(f'获取组合历史数据完成')
         if rebalancing_list:
             try:
-                mongo_client = AsyncIOMotorClient(mongo_uri)
+                mongo_client = MongoClient(mongo_uri)
                 db = mongo_client[mongo_config.db_name]
                 collection = db["zh_rebalancing"]
                 # 构建批量操作列表
@@ -83,7 +82,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                 ]
                 # 批量执行操作
                 if operations:
-                    result = await collection.bulk_write(operations, ordered=False)
+                    result = collection.bulk_write(operations, ordered=False)
                     logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB max_id: {max_index}")
                 mongo_client.close()
             except Exception as e:

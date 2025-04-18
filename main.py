@@ -2,7 +2,7 @@ import asyncio
 import click
 from loguru import logger
 from common.global_variant import init_db
-from app.xueqiu.main import crawl_index, crawl_rebalancing_async, crawl_zh, crawl_zh_async, crawl_zh_history_async, crawl_user_async
+from app.xueqiu.main import crawl_index, crawl_rebalancing, crawl_zh, crawl_zh_async, crawl_zh_history_async, crawl_user_async
 
 
 def connect_db(db_type: str):
@@ -39,7 +39,7 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
     elif spider_name == 'user':
         asyncio.run(crawl_user_async(start_id, end_id, coroutine_count))
     elif spider_name == 'reb':
-        asyncio.run(crawl_rebalancing_async(start_id, end_id, coroutine_count))
+        asyncio.run(crawl_rebalancing(start_id, end_id, coroutine_count))
     else:
         logger.error(f"未知的爬虫名称: {spider_name}")
 
