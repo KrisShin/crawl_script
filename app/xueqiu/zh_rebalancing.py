@@ -48,7 +48,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                         logger.error(
                             f'获取组合调仓数据失败: index:{zh_index}, zh_id:{symbol_all_list[zh_index]} code: {resp.status_code}, {resp.text}'
                         )
-                        continue
+                        return
                     data = resp.json()
                     if page == 1:
                         max_page = data['maxPage']
