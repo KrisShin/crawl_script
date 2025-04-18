@@ -32,6 +32,7 @@ class XueqiuZHHistorySpider(BaseSpider):
 
     async def crawl(self, s_id: int, max_id: int):
         history_list = []
+        update_time = datetime.now()
         while s_id < max_id:
             index_url = self.base_url % (symbol_list[s_id], random.choice(md5_list))
             try:
@@ -46,7 +47,7 @@ class XueqiuZHHistorySpider(BaseSpider):
                 resp_data = data[0]
                 resp_data['history'] = json.dumps(resp_data.pop('list'))
                 logger.success(f'获取组合历史数据成功: index: {s_id} ZHID:{symbol_list[s_id]}, crawled:1')
-                history_list.append(resp_data)
+                history_list.append({**resp_data, "update_time": update_time, 'symbol_number': symbol_list[s_id]})
                 # with open(f'xueqiu_zh_id', 'a') as f:
                 #     f.write(f'ZH{zh_id}\n')
                 s_id += 1
@@ -60,12 +61,11 @@ class XueqiuZHHistorySpider(BaseSpider):
                 mongo_client = AsyncIOMotorClient(mongo_uri)
                 db = mongo_client[mongo_config.db_name]
                 collection = db["zh_history"]
-                update_time = datetime.now()
                 # 构建批量操作列表
                 operations = [
                     UpdateOne(
                         {"symbol": item["symbol"]},  # 查询条件，确保 symbol 唯一
-                        {"$set": {**item, "update_time": update_time}},  # 更新内容
+                        {"$set": item},  # 更新内容
                         upsert=True,  # 如果不存在则插入
                     )
                     for item in history_list
