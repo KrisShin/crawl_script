@@ -8,7 +8,7 @@ from pymongo import UpdateOne
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuZHHistory
-from common.global_variant import ua, mongo_uri, mongo_config
+from common.global_variant import ua, mongo_uri, mongo_config, symbol_list
 
 md5_list = [
     'n4%2Bx0DyDgiGQi%3DDCzYDsI3xxAOqIx0KqPiY%2B6Qx',
@@ -30,32 +30,26 @@ class XueqiuZHHistorySpider(BaseSpider):
         super().__init__(client=client, model=XueqiuZHHistory)
         self.base_url = 'https://xueqiu.com/cubes/nav_daily/all.json?cube_symbol=%s&md5__1038=%s'
 
-    async def crawl(self, zh_id: int, max_id: int):
+    async def crawl(self, s_id: int, max_id: int):
         history_list = []
-        while zh_id < max_id:
-            index_url = self.base_url % (f'ZH{zh_id}', random.choice(md5_list))
+        while s_id < max_id:
+            index_url = self.base_url % (symbol_list[s_id], random.choice(md5_list))
             try:
                 resp = await self.client.get(index_url, headers={'User-Agent': ua.random}, timeout=30)
                 if resp.status_code != 200:
                     if '该组合不存在' in resp.text:
-                        zh_id += 1
+                        s_id += 1
                         continue
-                    logger.error(f'获取组合历史数据失败: {resp.status_code}, {resp.text}')
+                    logger.error(f'获取组合历史数据失败: index:{s_id}, zh_id:{symbol_list[s_id]} code: {resp.status_code}, {resp.text}')
                     continue
                 data = resp.json()
                 resp_data = data[0]
                 resp_data['history'] = json.dumps(resp_data.pop('list'))
-                logger.success(f'获取组合历史数据成功: ZHID:{zh_id}, crawled:1')
-                # await self.replace([resp_data])
-                # await self.collection.update_one(
-                #     {"symbol": resp_data["symbol"]},  # 查询条件，确保 symbol 唯一
-                #     {"$set": {**resp_data, "update_time": datetime.now()}},  # 更新内容
-                #     upsert=True,  # 如果不存在则插入
-                # )
+                logger.success(f'获取组合历史数据成功: index: {s_id} ZHID:{symbol_list[s_id]}, crawled:1')
                 history_list.append(resp_data)
                 # with open(f'xueqiu_zh_id', 'a') as f:
                 #     f.write(f'ZH{zh_id}\n')
-                zh_id += 1
+                s_id += 1
             except Exception as e:
                 logger.error(f'请求失败: {e}')
                 continue
@@ -94,7 +88,7 @@ if __name__ == '__main__':
     async def run():
         async with httpx.AsyncClient(proxies=proxies) as client:
             spider = XueqiuZHHistorySpider(client)
-            await spider.crawl(zh_id=100389)
+            await spider.crawl(s_id=100389)
 
     import asyncio
 

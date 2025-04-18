@@ -101,17 +101,17 @@ async def crawl_zh_history_task(zh_id: int, max_id: int, semaphore: asyncio.Sema
                         if await cookie_spider(client):
                             break  # 成功获取 cookie，退出循环
                         else:
-                            print(f"cookie_spider 失败，等待 20 秒后重试 zh_id={zh_id}")
+                            print(f"cookie_spider 失败，等待 20 秒后重试 index={zh_id}")
                             await asyncio.sleep(20)
                             client = await httpx.AsyncClient(proxy=proxies)
                     except Exception as e:
-                        print(f"cookie_spider 异常，等待 20 秒后重试 zh_id={zh_id}: {e}")
+                        print(f"cookie_spider 异常，等待 20 秒后重试 index={zh_id}: {e}")
                         await asyncio.sleep(20)
                         client = await httpx.AsyncClient(proxy=proxies)
 
                 # 执行爬取任务
                 spider = XueqiuZHHistorySpider(client)
-                await spider.crawl(zh_id=zh_id, max_id=max_id)
+                await spider.crawl(s_id=zh_id, max_id=max_id)
             try:
                 await client.close()
             except:
@@ -120,10 +120,13 @@ async def crawl_zh_history_task(zh_id: int, max_id: int, semaphore: asyncio.Sema
             print(f"任务失败 zh_id={zh_id}: {e}")
 
 
-async def crawl_zh_history_async(zh_id: int = 105040, max_id: int = 25800000, coroutine: int = 5):
+async def crawl_zh_history_async(zh_id: int = 105040, max_id: int = 1094677, coroutine: int = 5):
     # zh_id = 105040
     # max_id = 150000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID
+    if not max_id or max_id < zh_id:
+        logger.error("max_id 必须大于 u_id")
+        return
     step = 10  # 每个协程爬取的 ID 范围
 
     semaphore = asyncio.Semaphore(coroutine)  # 创建信号量
@@ -170,7 +173,7 @@ async def crawl_user_task(u_id: int, max_id: int, semaphore: asyncio.Semaphore):
             print(f"任务失败 zh_id={u_id}: {e}")
 
 
-async def crawl_user_async(u_id: int = 0, max_id: int = 204471, coroutine: int = 5):
+async def crawl_user_async(u_id: int = 0, max_id: int = 500450, coroutine: int = 5):
     # zh_id = 105040
     # max_id = 150000  # 限制最大 ID
     # max_id = 25800000  # 真实最大 ID

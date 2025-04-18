@@ -44,3 +44,9 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
 
 if __name__ == '__main__':
     run_spider()
+    # import json
+
+    # with open('./symbol.json', 'r') as f:
+    #     data = json.load(f)
+    # with open('./symbol.json', 'w') as f:
+    #     f.write(json.dumps([item['symbol'] for item in data]))
