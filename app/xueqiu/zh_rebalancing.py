@@ -49,7 +49,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                         continue
                     data = resp.json()
                     if page == 1:
-                        max_page = data['max_page']
+                        max_page = data['maxPage']
 
                     rebalancing_list.extend(data['list'])
                     # with open(f'xueqiu_zh_id', 'a') as f:
