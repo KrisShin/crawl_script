@@ -38,6 +38,10 @@ symbol_list = []
 with open('./symbol.json', 'r') as f:
     symbol_list = json.load(f)
 
+symbol_all_list = []
+with open('./symbol_all.json', 'r') as f:
+    symbol_all_list = json.load(f)
+
 
 async def init_db(create_db=False) -> None:
     mysql_config = config.get('database.mysql')

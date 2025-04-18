@@ -32,25 +32,25 @@ class XueqiuUserSpider(BaseSpider):
         super().__init__(client=client, model=XueqiuUser)
         self.base_url = 'https://xueqiu.com/user/show.json?id=%d&md5__1038=%s'
 
-    async def crawl(self, u_id: int, max_id: int):
+    async def crawl(self, user_index: int, max_index: int):
         user_list = []
         crawl_time = datetime.now()
-        while u_id < max_id:
-            user_id = user_id_list[u_id]
+        while user_index < max_index:
+            user_id = user_id_list[user_index]
             index_url = self.base_url % (user_id, random.choice(md5_list))
             try:
                 resp = await self.client.get(index_url, headers={'User-Agent': ua.random}, timeout=30)
                 if resp.status_code != 200:
                     logger.error(f'获取用户数据失败: {resp.status_code}, {resp.text}')
                     if '用户不存在' in resp.text:
-                        u_id += 1
+                        user_index += 1
                     continue
                 user_data = resp.json()
-                logger.success(f'获取用户数据成功: index:{u_id} ID:{user_id}')
+                logger.success(f'获取用户数据成功: index:{user_index} ID:{user_id}')
                 user_list.append({**user_data, "crawl_time": crawl_time})
                 # with open(f'xueqiu_zh_id', 'a') as f:
                 #     f.write(f'ZH{zh_id}\n')
-                u_id += 1
+                user_index += 1
             except Exception as e:
                 logger.error(f'请求失败: {e}')
                 continue
@@ -65,13 +65,13 @@ class XueqiuUserSpider(BaseSpider):
                 # 批量执行操作
                 if operations:
                     result = await collection.bulk_write(operations, ordered=False)
-                    logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB max_id: {max_id}")
+                    logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB max_id: {max_index}")
                 mongo_client.close()
             except Exception as e:
                 from traceback import print_exc
 
                 print_exc()
-                logger.error(f"保存到 MongoDB 失败: {e} max_id: {max_id}")
+                logger.error(f"保存到 MongoDB 失败: {e} max_id: {max_index}")
 
 
 if __name__ == '__main__':

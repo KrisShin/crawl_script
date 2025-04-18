@@ -115,59 +115,73 @@ class XueqiuUser(BaseModel):
     class Meta:
         table = "xueqiu_user"
 
+
+class XueqiuRebalancing(BaseModel):
+    """雪球组合调仓记录模型"""
+
+    status = fields.CharField(max_length=50, null=True, description="调仓状态", db_index=True)
+    cube_id = fields.BigIntField(null=False, description="组合 ID", db_index=True)
+    prev_bebalancing_id = fields.BigIntField(null=True, description="上一次调仓 ID")
+    category = fields.CharField(max_length=50, null=True, description="调仓分类")
+    exe_strategy = fields.CharField(max_length=50, null=True, description="执行策略")
+    created_at = fields.BigIntField(null=True, description="创建时间戳")
+    updated_at = fields.BigIntField(null=True, description="更新时间戳")
+    cash = fields.FloatField(null=True, description="现金比例")
+    cash_value = fields.FloatField(null=True, description="现金价值")
+    error_code = fields.IntField(null=True, description="错误代码")
+    error_message = fields.TextField(null=True, description="错误信息")
+    error_status = fields.CharField(max_length=50, null=True, description="错误状态")
+    holdings = fields.JSONField(null=True, description="持仓信息")
+    rebalancing_histories = fields.JSONField(null=True, description="调仓明细 JSON 数据")
+    comment = fields.TextField(null=True, description="用户备注")
+    diff = fields.IntField(null=True, description="调仓差异值")
+    new_buy_count = fields.IntField(null=True, description="新增买入数量")
+
+    class Meta:
+        table = "xueqiu_rebalancing"
 '''
 {
-    "id": 9522147036,
-    "name": null,
-    "province": "贵州",
-    "city": "遵义",
-    "location": null,
-    "description": "",
-    "url": null,
-    "domain": null,
-    "gender": "m",
-    "verified": false,
-    "type": "1",
-    "step": "three",
-    "profile": "/9522147036",
-    "recommend": null,
-    "intro": null,
-    "status": 1,
-    "following": false,
-    "blocking": false,
-    "subscribeable": false,
-    "remark": null,
-    "constrained": 0,
-    "screen_name": "ZZ贵州茅台价值之道",
-    "created_at": 1355461673627,
-    "followers_count": 9842,
-    "friends_count": 62,
-    "status_count": 367,
-    "last_status_id": 331916355,
-    "blog_description": null,
-    "st_color": "1",
-    "stocks_count": 14,
-    "cube_count": 1,
-    "donate_count": 0,
-    "verified_type": 0,
-    "verified_description": null,
-    "verified_realname": false,
-    "stock_status_count": null,
-    "follow_me": false,
-    "allow_all_stock": false,
-    "name_pinyin": null,
-    "screenname_pinyin": null,
-    "group_ids": null,
-    "common_count": 0,
-    "recommend_reason": null,
-    "verified_infos": [],
-    "select_company_background": null,
-    "select_company_banners": null,
-    "privacy_agreement": null,
-    "ip_location": "贵州",
-    "reg_time": 0,
-    "national_network_verify": null,
-    "photo_domain": "//xavatar.imedao.com/",
-    "profile_image_url": "community/20131/1360865157600-1360865175892.png,community/20131/1360865157600-1360865175892.png!180x180.png,community/20131/1360865157600-1360865175892.png!50x50.png,community/20131/1360865157600-1360865175892.png!30x30.png"
+    "id": 190146035,
+    "status": "success",
+    "cube_id": 1037635,
+    "prev_bebalancing_id": 189952247,
+    "category": "sys_rebalancing",
+    "exe_strategy": "market_all",
+    "created_at": 1743380077719,
+    "updated_at": 1743380077719,
+    "cash": 96.97,
+    "error_code": null,
+    "cash_value": 0.01069492,
+    "error_message": null,
+    "error_status": null,
+    "holdings": null,
+    "rebalancing_histories": [
+        {
+            "id": 242448853,
+            "rebalancing_id": 190146035,
+            "stock_id": 1001695,
+            "stock_name": "顺络电子",
+            "stock_symbol": "SZ002138",
+            "volume": 0.00689206,
+            "price": 29.55,
+            "net_value": 0.2037,
+            "weight": 3.03,
+            "target_weight": 3.03,
+            "prev_weight": 2.98,
+            "prev_target_weight": 2.98,
+            "prev_weight_adjusted": 2.97,
+            "prev_volume": 0.0067549,
+            "prev_price": 29.75,
+            "prev_net_value": 0.20095827,
+            "proactive": true,
+            "created_at": 1743380077719,
+            "updated_at": 1743380077719,
+            "target_volume": 0.00689206,
+            "prev_target_volume": 0.00676081
+        }
+    ],
+    "comment": "",
+    "diff": 0,
+    "new_buy_count": 0
 }
 '''
