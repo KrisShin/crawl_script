@@ -52,7 +52,9 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                     if page == 1:
                         max_page = data['maxPage']
 
-                    rebalancing_list.extend(data['list'])
+                    rebalancing_list.extend(
+                        [{**item, "crawl_time": update_time, 'symbol': symbol_all_list[zh_index]} for item in data['list']]
+                    )
                     # with open(f'xueqiu_zh_id', 'a') as f:
                     #     f.write(f'ZH{zh_id}\n')
                     logger.success(f'获取组合调仓数据成功: index: {zh_index} ZHID:{symbol_all_list[zh_index]}, crawled:{len(data["list"])}')
@@ -74,7 +76,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                 operations = [
                     UpdateOne(
                         {"id": item["id"]},  # 查询条件，确保 id 唯一
-                        {"$set": {**item, "crawl_time": update_time}},  # 更新内容
+                        {"$set": item},  # 更新内容
                         upsert=True,  # 如果不存在则插入
                     )
                     for item in rebalancing_list

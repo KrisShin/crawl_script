@@ -119,6 +119,7 @@ class XueqiuUser(BaseModel):
 class XueqiuRebalancing(BaseModel):
     """雪球组合调仓记录模型"""
 
+    symbol = fields.CharField(max_length=50, null=False, description="组合代号", db_index=True)
     status = fields.CharField(max_length=50, null=True, description="调仓状态", db_index=True)
     cube_id = fields.BigIntField(null=False, description="组合 ID", db_index=True)
     prev_bebalancing_id = fields.BigIntField(null=True, description="上一次调仓 ID")
