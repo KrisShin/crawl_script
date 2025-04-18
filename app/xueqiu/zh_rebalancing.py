@@ -1,4 +1,5 @@
-from datetime import datetime, time
+from datetime import datetime
+import time
 import random
 import httpx
 from loguru import logger
