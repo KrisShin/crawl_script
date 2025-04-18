@@ -39,6 +39,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
         while zh_index < max_index:
             page = 1
             max_page = 9999999
+            update_time = datetime.now()
             while page <= max_page:
                 index_url = self.base_url % (symbol_all_list[zh_index], page, random.choice(md5_list))
                 try:
@@ -71,7 +72,6 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                 mongo_client = AsyncIOMotorClient(mongo_uri)
                 db = mongo_client[mongo_config.db_name]
                 collection = db["zh_rebalancing"]
-                update_time = datetime.now()
                 # 构建批量操作列表
                 operations = [
                     UpdateOne(
