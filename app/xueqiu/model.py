@@ -108,7 +108,7 @@ class XueqiuUser(BaseModel):
     privacy_agreement = fields.TextField(null=True, description="隐私协议")
     ip_location = fields.CharField(null=True, max_length=128, description="IP位置")
     reg_time = fields.BigIntField(null=True, description="注册时间")
-    national_network_verify = fields.TextField(null=True, description="国家网络认证")
+    national_network_verify = fields.JSONField(null=True, description="国家网络认证")
     photo_domain = fields.CharField(null=True, max_length=256, description="头像域名")
     profile_image_url = fields.TextField(null=True, description="头像URL")
 
