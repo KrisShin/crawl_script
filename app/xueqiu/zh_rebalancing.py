@@ -7,7 +7,7 @@ from pymongo import UpdateOne, MongoClient
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuRebalancing
-from common.global_variant import ua, mongo_uri, mongo_config, symbol_all_list
+from common.global_variant import ua, mongo_uri, mongo_config, symbol_all_list, user_cookies
 
 md5_list = [
     'euG%3DiIgtY5AIqGNDQ2xBKD%3DO0Qp2eDthTCaq5D',
@@ -23,15 +23,15 @@ md5_list = [
     '1e761e013c-OidiGI9%3D5IcIlIpF%3D4iri4%3DEVIGL8IyijEnUypsj4rI%3D%2FnHiwzV5VjLCbjshw8i54Vq5%3D5qIyds1IzdOkn%3Dyys%2BIJysTIsyIMIrDIIxfIIrIY1IsGIey5kUcdOnID%3D5pIV%3DjRI4wuLsJIdseIYu%3DIJuIykqoAIOPcEiiiqS%3DIfv345QLeG5LrXQ3yszPpOsiuslIp4sII',
     'n4%2BxgD0D9DyAD%3DQGQDCDlhje9MODc77iDQuqcvID',
 ]
-cookie = 's=bq1204xe6n; cookiesu=901744357221250; device_id=501dedaaad2e70097fc5676dfdfe7d3b; bid=a66cc8d3abe54e222cd5a22d628e6bbe_m9ch9y7z; __utmz=1.1744357264.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); Hm_lvt_1db88642e346389874251b5a1eded6e3=1743390251,1744007459,1744939100; HMACCOUNT=9605A34B28A1FB47; __utmc=1; remember=1; xq_a_token=8a371dd6b90dff075cd37cfeb58498dd461cc62c; xqat=8a371dd6b90dff075cd37cfeb58498dd461cc62c; xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjMzMTkwMTQ3MjIsImlzcyI6InVjIiwiZXhwIjoxNzQ3NTQ5NTU4LCJjdG0iOjE3NDQ5NTc1NTgxODYsImNpZCI6ImQ5ZDBuNEFadXAifQ.XfyJfO0rqyon8BtPAY0yGZZb3PIq5oXXSFakiL9f98zlCN0eXankXCcV8SegahC2nXEnjJunLNfObXVW-5L68Rqpewdh0AVvLPhPRONS7poNEFzgg_7CI4AApshvJKJOygkWDxI97jTCKsYwRiSDq8Yu4UXDdtCriXSu-2L2MI-6JQoZodzxaxnUtkgUfWrPlXTYd3UZyEGlEoaAiVlxq9E6rDo1ssYU8T72eYh3PT2MkHANEqPqW9TAm6GPLuDN2C5_ZIr0ajoIiuu1eWvAD5t166swbD6nvzwZEyA6BwURRdLk7G78GbaFiBnbB7ousnIlqayoztfLPTqHnUqHRA; xq_r_token=ac5a6d400e1dc47eafcb90d833d5f7bde5be8e88; xq_is_login=1; u=3319014722; .thumbcache_f24b8bbe5a5934237bbc0eda20c1b6e7=FNaYuy/fFKG2bXdHjgTYAVZThnBwehKjGSaqtK0L+70D8C7kRgFcUC8ZpdlbyFI1XXR7Y97OisTe08jUMQAP4g%3D%3D; acw_tc=1a312e5f17449668182538548e005416266741fd2ca185f667ce1f12451803; __utma=1.1099311988.1744357264.1744962025.1744966821.8; __utmt=1; Hm_lpvt_1db88642e346389874251b5a1eded6e3=1744967068; __utmb=1.3.10.1744966821; ssxmod_itna=WqUxRQG=Yri7G7DgQDpgQDCGD8fCDXDUL4iQGgDYq7=GFQDCx7K7wWiY4ttEe4D7YQoTYOBD05mxGDA5Dn8x7YDtxfPvQV0gMyDYTb8GGeYBR/domebbt902e1NUMY8YvTqemxiD8RxDwxibDBKDnaxDjxbKGDiiTx0rD0eDPxDYDG+wDD5voFxDjComW+Osa7AqozoDbaxhEWxDRrdDSifvGzOsiCoDi=dDX=3DarBoCFxGDmKDI2CPECoDFrMoQdQhDmRrr3j0DC9UP4YQ89gvaj=YRGIMGApKGQibRCveClwQoe+xM0wMZwtjvQlXse530vRAPK4+sPXYfPtYq/l=2rt4OtKhwS6GmDb6BpGlwGDhK+q10qUCDqC5Sohz0hqQD/YNoYD; ssxmod_itna2=WqUxRQG=Yri7G7DgQDpgQDCGD8fCDXDUL4iQGgDYq7=GFQDCx7K7wWiY4ttEe4D7YQoTYOGDDPAsGWRjgRpi0EwvXGKQDouTUVeD'
 
 
 class XueqiuZHRebalancingSpider(BaseSpider):
     """雪球组合仓位变动数据爬虫"""
 
-    def __init__(self, client: httpx.AsyncClient):
+    def __init__(self, client: httpx.AsyncClient, index):
         super().__init__(client=client, model=XueqiuRebalancing)
         self.base_url = 'https://xueqiu.com/cubes/rebalancing/history.json?cube_symbol=%s&count=50&page=%d&md5__1038=%s'
+        self.cookie = user_cookies.values()[index % 4]
 
     def crawl(self, zh_index: int, max_index: int):
         rebalancing_list = []
@@ -40,21 +40,19 @@ class XueqiuZHRebalancingSpider(BaseSpider):
             max_page = 9999999
             update_time = datetime.now()
             while page <= max_page:
+                if page > 50:
+                    break
                 index_url = self.base_url % (symbol_all_list[zh_index], page, random.choice(md5_list))
                 try:
                     resp = self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': cookie}, timeout=30)
                     if resp.status_code != 200:
-                        logger.error(
-                            f'获取组合调仓数据失败: index:{zh_index}, zh_id:{symbol_all_list[zh_index]} code: {resp.status_code}, {resp.text}'
-                        )
-                        return
+                        logger.error(f'获取组合调仓数据失败: index:{zh_index}, zh_id:{symbol_all_list[zh_index]} code: {resp.status_code}, {resp.text}')
+                        time.sleep(120)
                     data = resp.json()
                     if page == 1:
                         max_page = data['maxPage']
 
-                    rebalancing_list.extend(
-                        [{**item, "crawl_time": update_time, 'symbol': symbol_all_list[zh_index]} for item in data['list']]
-                    )
+                    rebalancing_list.extend([{**item, "crawl_time": update_time, 'symbol': symbol_all_list[zh_index]} for item in data['list']])
                     # with open(f'xueqiu_zh_id', 'a') as f:
                     #     f.write(f'ZH{zh_id}\n')
                     logger.success(f'获取组合调仓数据成功: index: {zh_index} ZHID:{symbol_all_list[zh_index]}, crawled:{len(data["list"])}')
@@ -62,7 +60,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                 except Exception as e:
                     logger.error(f'请求失败: {e}')
                     continue
-                time.sleep(random.randint(3, 8))
+                time.sleep(1 + random.random() * 3)
             zh_index += 1
         # await self.save(history_list)
         # logger.success(f'获取组合历史数据完成')

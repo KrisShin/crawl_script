@@ -42,6 +42,10 @@ symbol_all_list = []
 with open('./symbol_all.json', 'r') as f:
     symbol_all_list = json.load(f)
 
+user_cookies = {}
+with open('./phone_cookie.json', 'r') as f:
+    user_cookies = json.load(f)
+
 
 async def init_db(create_db=False) -> None:
     mysql_config = config.get('database.mysql')
