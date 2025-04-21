@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import time
 import random
 import httpx
@@ -52,7 +53,12 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                     if page == 1:
                         max_page = data['maxPage']
 
-                    rebalancing_list.extend([{**item, "crawl_time": update_time, 'symbol': symbol_all_list[zh_index]} for item in data['list']])
+                    rebalancing_list.extend(
+                        [
+                            {**item, "crawl_time": update_time, 'symbol': symbol_all_list[zh_index], 'rebalancing_histories': json.dumps(item['rebalancing_histories'])}
+                            for item in data['list']
+                        ]
+                    )
                     # with open(f'xueqiu_zh_id', 'a') as f:
                     #     f.write(f'ZH{zh_id}\n')
                     logger.success(f'获取组合调仓数据成功: index: {zh_index} ZHID:{symbol_all_list[zh_index]}, crawled:{len(data["list"])}')
