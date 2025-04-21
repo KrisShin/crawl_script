@@ -208,12 +208,13 @@ async def crawl_rebalancing(zh_index: int = 0, max_index: int = 1265067, corouti
 
     with httpx.Client() as client:
         while zh_index < max_index:
-            spider = XueqiuZHRebalancingSpider(client)
+            spider = XueqiuZHRebalancingSpider(client, coroutine)
             spider.crawl(zh_index=zh_index, max_index=max_index)
             zh_index += step
 
     # 爬虫完成时记录日志
     print(f"爬虫任务完成，已爬取到 max_index={max_index}")
+
 
 async def crawl_user_watch_zh(zh_index: int = 0, max_index: int = 639748, coroutine: int = 5):
     # zh_id = 105040
@@ -232,6 +233,7 @@ async def crawl_user_watch_zh(zh_index: int = 0, max_index: int = 639748, corout
 
     # 爬虫完成时记录日志
     print(f"爬虫任务完成，已爬取到 max_index={max_index}")
+
 
 async def crawl_user_investment_zh(zh_index: int = 0, max_index: int = 639748, coroutine: int = 5):
     # zh_id = 105040

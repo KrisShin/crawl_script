@@ -28,10 +28,10 @@ md5_list = [
 class XueqiuZHRebalancingSpider(BaseSpider):
     """雪球组合仓位变动数据爬虫"""
 
-    def __init__(self, client: httpx.AsyncClient, index):
+    def __init__(self, client: httpx.AsyncClient, index: int):
         super().__init__(client=client, model=XueqiuRebalancing)
         self.base_url = 'https://xueqiu.com/cubes/rebalancing/history.json?cube_symbol=%s&count=50&page=%d&md5__1038=%s'
-        self.cookie = user_cookies.values()[index % 4]
+        self.cookie = list(user_cookies.values())[index % 4]
 
     def crawl(self, zh_index: int, max_index: int):
         rebalancing_list = []
@@ -44,7 +44,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                     break
                 index_url = self.base_url % (symbol_all_list[zh_index], page, random.choice(md5_list))
                 try:
-                    resp = self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': cookie}, timeout=30)
+                    resp = self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': self.cookie}, timeout=30)
                     if resp.status_code != 200:
                         logger.error(f'获取组合调仓数据失败: index:{zh_index}, zh_id:{symbol_all_list[zh_index]} code: {resp.status_code}, {resp.text}')
                         time.sleep(120)
