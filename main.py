@@ -45,11 +45,11 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
 
 
 if __name__ == '__main__':
-    run_spider()
-    # import json
+    # run_spider()
+    import json
 
-    # with open('./user_id.json', 'r') as f:
-    #     data = json.load(f)
-    # with open('./user_id.json', 'w') as f:
-    #     f.write(json.dumps([item['owner_id'] for item in data]))
-    # print(len(data))
+    with open('./zh_symbol.json', 'r') as f:
+        data = json.load(f)
+    with open('./zh_symbol.json', 'w') as f:
+        f.write(json.dumps([item['symbol'] for item in data]))
+    print(len(data))

@@ -31,12 +31,12 @@ mongo_uri = 'mongodb://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db_name)s' % {
 }
 
 user_id_list = []
-with open('./user_id.json', 'r') as f:
-    user_id_list = json.load(f)
+# with open('./user_id.json', 'r') as f:
+#     user_id_list = json.load(f)
 
 symbol_list = []
-with open('./symbol.json', 'r') as f:
-    symbol_list = json.load(f)
+# with open('./symbol.json', 'r') as f:
+#     symbol_list = json.load(f)
 
 symbol_all_list = []
 with open('./symbol_all.json', 'r') as f:
