@@ -188,7 +188,7 @@ async def crawl_user_async(u_id: int = 0, max_id: int = 500450, coroutine: int =
     tasks = []
 
     while u_id < max_id:
-        tasks.append(crawl_user_task(u_id, u_id + step, semaphore))
+        tasks.append(crawl_user_task(u_id, min(u_id + step, max_id), semaphore))
         u_id += step
 
     # 并发运行所有任务，受信号量限制
@@ -210,7 +210,7 @@ async def crawl_rebalancing(zh_index: int = 0, max_index: int = 1265067, corouti
     with httpx.Client() as client:
         while zh_index < max_index:
             spider = XueqiuZHRebalancingSpider(client, coroutine)
-            spider.crawl(zh_index=zh_index, max_index=zh_index + step)
+            spider.crawl(zh_index=zh_index, max_index=min(zh_index + step, max_index))
             zh_index += step
 
     # 爬虫完成时记录日志
@@ -229,7 +229,7 @@ async def crawl_user_watch_zh(zh_index: int = 0, max_index: int = 639748, corout
     with httpx.Client() as client:
         while zh_index < max_index:
             spider = XueqiuZHRebalancingSpider(client)
-            spider.crawl(zh_index=zh_index, max_index=zh_index + step)
+            spider.crawl(zh_index=zh_index, max_index=min(zh_index + step, max_index))
             zh_index += step
 
     # 爬虫完成时记录日志
@@ -248,7 +248,7 @@ async def crawl_user_investment_zh(zh_index: int = 0, max_index: int = 639748, c
     with httpx.Client() as client:
         while zh_index < max_index:
             spider = XueqiuZHRebalancingSpider(client)
-            spider.crawl(zh_index=zh_index, max_index=zh_index + step)
+            spider.crawl(zh_index=zh_index, max_index=min(zh_index + step, max_index))
             zh_index += step
 
     # 爬虫完成时记录日志
