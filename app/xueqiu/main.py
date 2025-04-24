@@ -82,7 +82,7 @@ async def crawl_zh_async(zh_id: int = 100389, max_id: int = 25800000, coroutine:
     tasks = []
 
     while zh_id < max_id:
-        tasks.append(crawl_zh_task(zh_id, zh_id + step, semaphore))
+        tasks.append(crawl_zh_task(zh_id, min(zh_id + step, max_id), semaphore))
         zh_id += step
 
     # 并发运行所有任务，受信号量限制
@@ -135,7 +135,7 @@ async def crawl_zh_history_async(zh_id: int = 105040, max_id: int = 1094677, cor
     tasks = []
 
     while zh_id < max_id:
-        tasks.append(crawl_zh_history_task(zh_id, zh_id + step, semaphore))
+        tasks.append(crawl_zh_history_task(zh_id, min(zh_id + step, max_id), semaphore))
         zh_id += step
 
     # 并发运行所有任务，受信号量限制
