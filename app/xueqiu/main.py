@@ -2,12 +2,13 @@ import asyncio
 import httpx
 from loguru import logger
 
-from app.xueqiu.cookie_spider import main as cookie_spider
-from app.xueqiu.index_spider import XueqiuIndexSpider
-from app.xueqiu.user_spider import XueqiuUserSpider
-from app.xueqiu.zh_hostry_spider import XueqiuZHHistorySpider
-from app.xueqiu.zh_index_spider import XueqiuZHSpider
-from app.xueqiu.zh_rebalancing import XueqiuZHRebalancingSpider
+from app.xueqiu.analyze import get_good_zh
+from app.xueqiu.spiders.cookie_spider import main as cookie_spider
+from app.xueqiu.spiders.index_spider import XueqiuIndexSpider
+from app.xueqiu.spiders.user_spider import XueqiuUserSpider
+from app.xueqiu.spiders.zh_hostry_spider import XueqiuZHHistorySpider
+from app.xueqiu.spiders.zh_index_spider import XueqiuZHSpider
+from app.xueqiu.spiders.zh_rebalancing_spider import XueqiuZHRebalancingSpider
 from common.global_variant import proxies
 
 TYPE_MARKET_MAPPING = {
@@ -252,3 +253,7 @@ async def crawl_user_investment_zh(zh_index: int = 0, max_index: int = 639748, c
 
     # 爬虫完成时记录日志
     print(f"爬虫任务完成，已爬取到 max_index={max_index}")
+
+
+async def analyze():
+    await get_good_zh()

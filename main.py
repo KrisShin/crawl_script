@@ -2,7 +2,7 @@ import asyncio
 import click
 from loguru import logger
 from common.global_variant import init_db
-from app.xueqiu.main import crawl_index, crawl_rebalancing, crawl_zh, crawl_zh_async, crawl_zh_history_async, crawl_user_async
+from app.xueqiu.main import analyze, crawl_index, crawl_rebalancing, crawl_zh, crawl_zh_async, crawl_zh_history_async, crawl_user_async
 
 
 def connect_db(db_type: str):
@@ -13,10 +13,12 @@ def connect_db(db_type: str):
 
 
 @click.command()
-@click.argument('spider_name', type=click.Choice(['index', 'zh_single', 'zh', 'zh_his', 'user', 'reb'], case_sensitive=False))
-@click.argument('start_id', type=int)
-@click.argument('end_id', type=int)
-@click.argument('coroutine_count', type=int)
+@click.argument(
+    'spider_name', type=click.Choice(['index', 'zh_single', 'zh', 'zh_his', 'user', 'reb', 'ana'], case_sensitive=False), required=False
+)
+@click.argument('start_id', type=int, required=False)
+@click.argument('end_id', type=int, required=False)
+@click.argument('coroutine_count', type=int, required=False)
 def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
     """
     启动爬虫脚本。
@@ -40,16 +42,18 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
         asyncio.run(crawl_user_async(start_id, end_id, coroutine_count))
     elif spider_name == 'reb':
         asyncio.run(crawl_rebalancing(start_id, end_id, coroutine_count))
+    elif spider_name == 'ana':
+        asyncio.run(analyze())
     else:
         logger.error(f"未知的爬虫名称: {spider_name}")
 
 
 if __name__ == '__main__':
-    # run_spider()
-    import json
+    run_spider()
+    # import json
 
-    with open('./zh_symbol.json', 'r') as f:
-        data = json.load(f)
-    with open('./zh_symbol.json', 'w') as f:
-        f.write(json.dumps([item['symbol'] for item in data]))
-    print(len(data))
+    # with open('./zh_his.json', 'r') as f:
+    #     data = json.load(f)
+    # with open('./zh_his.json', 'w') as f:
+    #     f.write(json.dumps([item['symbol'] for item in data]))
+    # print(len(data))
