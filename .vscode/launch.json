@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",
-            "args": ["zh_his", "0", "1", "1"],
+            "args": ["ana"],
             "console": "integratedTerminal"
         }
     ]
