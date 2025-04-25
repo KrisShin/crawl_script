@@ -9,3 +9,5 @@ data_json
 
 # cache files
 **/.DS_Store
+
+analyse_last_id.txt
