@@ -2,7 +2,8 @@ import asyncio
 import httpx
 from loguru import logger
 
-from app.xueqiu.analyze import get_good_zh
+from app.xueqiu.analyze_and_draw_down import get_good_zh_and_draw_down
+from app.xueqiu.calc_draw_down import process_batch
 from app.xueqiu.spiders.cookie_spider import main as cookie_spider
 from app.xueqiu.spiders.index_spider import XueqiuIndexSpider
 from app.xueqiu.spiders.user_spider import XueqiuUserSpider
@@ -256,4 +257,4 @@ async def crawl_user_investment_zh(zh_index: int = 0, max_index: int = 639748, c
 
 
 async def analyze():
-    await get_good_zh()
+    await get_good_zh_and_draw_down()

@@ -28,7 +28,7 @@ class XueqiuZHSpider(BaseSpider):
 
     async def crawl(self, zh_id: int, max_id: int):
         while zh_id < max_id:
-            index_url = self.base_url % (f'ZH{zh_id}', random.choice(md5_list))
+            index_url = self.base_url % (f'ZH{str(zh_id).rjust(6, '0')}', random.choice(md5_list))
             try:
                 resp = await self.client.get(index_url, headers={'User-Agent': ua.random}, timeout=30)
                 if resp.status_code != 200:
