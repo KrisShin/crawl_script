@@ -29,7 +29,7 @@ class XueqiuZHIndex(BaseModel):
 
     annualized_gain_rate = fields.FloatField(null=True, description='年化收益率')
     daily_gain = fields.FloatField(null=True, description='日收益')
-    draw_down = fields.FloatField(null=True, description='提取')
+    draw_down = fields.JSONField(null=True, description='提取')
     flowing = fields.BooleanField(null=True, description='流动性')
     market = fields.CharField(null=True, max_length=8, description='市场')
     monthly_gain = fields.FloatField(null=True, description='月收益')
