@@ -2,7 +2,7 @@ import asyncio
 import click
 from loguru import logger
 from common.global_variant import init_db
-from app.xueqiu.main import analyze, calc_draw_down, crawl_index, crawl_rebalancing, crawl_zh, crawl_zh_async, crawl_zh_history_async, crawl_user_async
+from app.xueqiu.main import analyze, crawl_index, crawl_rebalancing, crawl_zh, crawl_zh_async, crawl_zh_history_async, crawl_user_async
 
 
 def connect_db(db_type: str):

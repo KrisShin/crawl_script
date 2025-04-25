@@ -3,7 +3,6 @@ import httpx
 from loguru import logger
 
 from app.xueqiu.analyze_and_draw_down import get_good_zh_and_draw_down
-from app.xueqiu.calc_draw_down import process_batch
 from app.xueqiu.spiders.cookie_spider import main as cookie_spider
 from app.xueqiu.spiders.index_spider import XueqiuIndexSpider
 from app.xueqiu.spiders.user_spider import XueqiuUserSpider
