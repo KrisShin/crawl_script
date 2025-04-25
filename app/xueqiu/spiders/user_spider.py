@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import random
 import httpx
 from loguru import logger
@@ -47,7 +48,14 @@ class XueqiuUserSpider(BaseSpider):
                     continue
                 user_data = resp.json()
                 logger.success(f'获取用户数据成功: index:{user_index} ID:{user_id}')
-                user_list.append({**user_data, "crawl_time": crawl_time})
+                user_list.append(
+                    {
+                        **user_data,
+                        "crawl_time": crawl_time,
+                        'verified_infos': json.dumps(user_data['verified_infos']),
+                        'national_network_verify': json.dumps(user_data['national_network_verify']),
+                    }
+                )
                 # with open(f'xueqiu_zh_id', 'a') as f:
                 #     f.write(f'ZH{zh_id}\n')
                 user_index += 1

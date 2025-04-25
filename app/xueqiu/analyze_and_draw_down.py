@@ -37,7 +37,7 @@ async def get_good_zh_and_draw_down():
         for record in batch:
             last_id = record.id  # 更新分页游标
 
-            try:
+            try:  
                 data = json.loads(record.history)
                 values_f = [d["value"] for d in data if "value" in d and isinstance(d["value"], (int, float))]
                 his_len = len(data)

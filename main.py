@@ -52,8 +52,8 @@ if __name__ == '__main__':
     run_spider()
     # import json
 
-    # with open('./zh_his.json', 'r') as f:
+    # with open('./user_id.json', 'r') as f:
     #     data = json.load(f)
-    # with open('./zh_his.json', 'w') as f:
-    #     f.write(json.dumps([item['symbol'] for item in data]))
+    # with open('./user_id.json', 'w') as f:
+    #     f.write(json.dumps([item['owner_id'] for item in data]))
     # print(len(data))
