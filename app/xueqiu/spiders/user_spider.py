@@ -52,8 +52,8 @@ class XueqiuUserSpider(BaseSpider):
                     {
                         **user_data,
                         "crawl_time": crawl_time,
-                        'verified_infos': json.dumps(user_data['verified_infos']),
-                        'national_network_verify': json.dumps(user_data['national_network_verify']),
+                        'verified_infos': user_data['verified_infos'] and json.dumps(user_data['verified_infos']),
+                        'national_network_verify': user_data['national_network_verify'] and json.dumps(user_data['national_network_verify']),
                     }
                 )
                 # with open(f'xueqiu_zh_id', 'a') as f:

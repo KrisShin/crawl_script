@@ -50,8 +50,8 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
 
 if __name__ == '__main__':
     run_spider()
-    # import json
 
+    # import json
     # with open('./user_id.json', 'r') as f:
     #     data = json.load(f)
     # with open('./user_id.json', 'w') as f:
