@@ -96,7 +96,7 @@ async def process_batches(queue: asyncio.Queue):
         try:
             await asyncio.gather(
                 asyncio.gather(*update_tasks, return_exceptions=True),
-                XueqiuZHPicked.bulk_create(picked_symbols, batch_size=1000, on_conflict_ignore=True) if picked_symbols else asyncio.sleep(0)
+                XueqiuZHPicked.bulk_create(picked_symbols, batch_size=1000, ignore_conflicts=True) if picked_symbols else asyncio.sleep(0)
             )
         except Exception as e:
             logger.warning(f"批处理异常（但已忽略错误），原因: {e}")
