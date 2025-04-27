@@ -157,6 +157,6 @@ async def get_good_zh_and_draw_down():
     producer = asyncio.create_task(fetch_batches(last_id, queue))
 
     # 用 tqdm 包装一下，总数估算值
-    async with tqdm(total=TOTAL_SYMBOLS_ESTIMATE, desc="分析组合进度", unit="symbols") as pbar:
+    with tqdm(total=TOTAL_SYMBOLS_ESTIMATE, desc="分析组合进度", unit="symbols") as pbar:
         consumers = [asyncio.create_task(process_batches(queue, pbar)) for _ in range(MAX_WORKERS)]
         await asyncio.gather(producer, *consumers)
