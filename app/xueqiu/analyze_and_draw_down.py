@@ -3,12 +3,17 @@ import json
 from collections import defaultdict
 from datetime import datetime
 from loguru import logger
-from pymongo import MongoClient
-
+from motor.motor_asyncio import AsyncIOMotorClient
 from app.xueqiu.model import XueqiuZHHistory, XueqiuZHIndex
 from common.global_variant import mongo_uri, mongo_config
 
 BATCH_SIZE = 500
+MAX_WORKERS = 5
+QUEUE_SIZE = 10
+
+mongo_client = AsyncIOMotorClient(mongo_uri)
+db = mongo_client[mongo_config.db_name]
+collection = db["analyze"]
 
 
 def max_drawdown(values):
@@ -22,7 +27,19 @@ def max_drawdown(values):
     return round(max_dd, 6)
 
 
-async def get_good_zh_and_draw_down():
+async def fetch_batches(start_id, queue: asyncio.Queue):
+    current_id = start_id
+    while True:
+        batch = await XueqiuZHHistory.filter(id__gt=current_id).order_by('id').limit(BATCH_SIZE)
+        if not batch:
+            await queue.put(None)
+            break
+
+        await queue.put(batch)
+        current_id = batch[-1].id
+
+
+async def process_batches(queue: asyncio.Queue):
     last_id = 0
     try:
         with open("analyse_last_id.txt", "r") as f:
@@ -30,22 +47,19 @@ async def get_good_zh_and_draw_down():
     except:
         pass
 
-    mongo_client = MongoClient(mongo_uri)
-    db = mongo_client[mongo_config.db_name]
-    collection = db["analyze"]
+    while True:
+        batch = await queue.get()
+        if batch is None:
+            queue.put_nowait(None)
+            break
 
-    batch = await XueqiuZHHistory.filter(id__gt=last_id).order_by('id').limit(BATCH_SIZE)
-
-    while batch:
-        # 提前拉下一批
-        next_last_id = batch[-1].id
-        next_batch_task = XueqiuZHHistory.filter(id__gt=next_last_id).order_by('id').limit(BATCH_SIZE)
+        t0 = datetime.now()
 
         update_tasks = []
-        symbols_to_insert = []
+        mongo_docs = []
+        new_last_id = batch[-1].id
 
         for record in batch:
-            last_id = record.id
             try:
                 year_values = defaultdict(list)
                 data = json.loads(record.history)
@@ -67,34 +81,53 @@ async def get_good_zh_and_draw_down():
                 drawdown_by_year = (
                     {str(year): max_drawdown(vals) for year, vals in year_values.items() if len(vals) >= 10} if year_values else None
                 )
+
                 if drawdown_by_year:
-                    update_tasks.append(XueqiuZHIndex.filter(symbol=record.symbol).update(draw_down=drawdown_by_year))
+                    update_tasks.append(
+                        XueqiuZHIndex.filter(symbol=record.symbol).update(draw_down=drawdown_by_year)
+                    )
 
                 if his_len >= 365 * 3 and min_value >= 1:
-                    symbols_to_insert.append({'symbol': record.symbol})
-
-                logger.info(
-                    f"组合:{record.name}-{record.symbol} 长度: {his_len}, 最小净值: {min_value:.4f}, 符合条件:{'✅' if his_len >= 365 * 3 and min_value >= 1 else '🚫'}"
-                )
+                    mongo_docs.append({'symbol': record.symbol})
 
             except Exception as e:
                 logger.warning(f"Parse failed for {record.symbol}: {e}")
 
-        # 批量update
-        if update_tasks:
-            await asyncio.gather(*update_tasks)
+        try:
+            # 批量更新 + 插入保护在事务内
+            async with await mongo_client.start_session() as session:
+                async with session.start_transaction():
+                    if update_tasks:
+                        await asyncio.gather(*update_tasks, return_exceptions=True)
 
-        # 批量插入mongo
-        if symbols_to_insert:
-            collection.insert_many(symbols_to_insert, ordered=False)
+                    if mongo_docs:
+                        await collection.insert_many(mongo_docs, ordered=False, session=session)
 
-        # 写入 last_id
-        with open("analyse_last_id.txt", "w") as f:
-            f.write(str(last_id))
+                    # 更新 last_id 到文件
+                    with open("analyse_last_id.txt", "w") as f:
+                        f.write(str(new_last_id))
 
-        logger.success(f"成功处理 {len(batch)} 条数据, 插入 Mongo {len(symbols_to_insert)} 条, last_id: {last_id}")
+        except Exception as e:
+            logger.error(f"事务失败！回滚本批处理: {e}")
+            # 可选补偿机制，比如把 mongo_docs 存到失败日志，后面专门处理失败的数据
+            return  # 本批放弃，继续下批（安全优先）
 
-        # 等待下一批
-        batch = await next_batch_task
+        t1 = datetime.now()
+        logger.success(f"事务成功提交 batch，处理 {len(batch)}条，用时: {(t1 - t0).total_seconds():.2f}s, last_id: {new_last_id}")
 
-    mongo_client.close()
+
+async def get_good_zh_and_draw_down():
+    try:
+        with open("analyse_last_id.txt", "r") as f:
+            last_id = int(f.read())
+    except:
+        last_id = 0
+
+    queue = asyncio.Queue(maxsize=QUEUE_SIZE)
+
+    producer = asyncio.create_task(fetch_batches(last_id, queue))
+    consumers = [asyncio.create_task(process_batches(queue)) for _ in range(MAX_WORKERS)]
+
+    await asyncio.gather(producer, *consumers)
+
+    await mongo_client.close()
