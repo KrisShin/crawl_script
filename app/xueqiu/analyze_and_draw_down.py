@@ -68,7 +68,7 @@ async def get_good_zh_and_draw_down():
                     symbols.append({'symbol': record.symbol})
 
                 logger.info(
-                    f"组合:{record.name}-{record.symbol} 的历史数据长度: {his_len}, 最小净值: {min_value:.4f}, 年度撤回: {drawdown_by_year}, 符合条件:{'✅' if his_len >= 365 * 3 and min_value >= 1 else '🚫'}"
+                    f"组合:{record.name}-{record.symbol} 长度: {his_len}, 最小净值: {min_value:.4f}, 符合条件:{'✅' if his_len >= 365 * 3 and min_value >= 1 else '🚫'}"
                 )
 
             except Exception as e:

@@ -31,5 +31,18 @@ async def import_user():
         print(f"已导入{len(users)}条数据")
 
 
+async def check_hisory():
+    import json
+    m_his = []
+    with open('m_his.json', 'r') as f:
+        m_his = set(json.load(f))
+
+    a_his = []
+    with open('zh_his.json', 'r') as f:
+        a_his = set(json.load(f))
+    print(f"历史数据差异: {a_his - m_his}")
+
+
 if __name__ == "__main__":
-    run_async(import_user())
+    # run_async(import_user())
+    run_async(check_hisory())

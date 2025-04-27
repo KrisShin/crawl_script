@@ -11,7 +11,7 @@ def main():
 
     # 计算昨天的时间窗口
     today = datetime.datetime.now(datetime.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    today = today - datetime.timedelta(days=3)
+    today = today - datetime.timedelta(days=1)
     yesterday = today - datetime.timedelta(days=1)
 
     # 1. 昨天新增 symbol 去重数

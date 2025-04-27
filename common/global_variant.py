@@ -35,7 +35,7 @@ with open('./user_id.json', 'r') as f:
     user_id_list = json.load(f)
 
 symbol_list = []
-with open('./zh_his.json', 'r') as f:
+with open('./f_his.json', 'r') as f:
     symbol_list = json.load(f)
 
 symbol_all_list = []
