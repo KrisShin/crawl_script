@@ -1,3 +1,4 @@
+import asyncio
 import json
 from collections import defaultdict
 from datetime import datetime
@@ -18,7 +19,7 @@ def max_drawdown(values):
             peak = v
         dd = (peak - v) / peak
         max_dd = max(max_dd, dd)
-    return round(max_dd, 6)  # 保留小数位，方便后续使用
+    return round(max_dd, 6)
 
 
 async def get_good_zh_and_draw_down():
@@ -29,21 +30,28 @@ async def get_good_zh_and_draw_down():
     except:
         pass
 
-    while True:
-        symbols = []
-        batch = await XueqiuZHHistory.filter(id__gt=last_id).order_by('id').limit(BATCH_SIZE)
-        if not batch:
-            break
+    mongo_client = MongoClient(mongo_uri)
+    db = mongo_client[mongo_config.db_name]
+    collection = db["analyze"]
+
+    batch = await XueqiuZHHistory.filter(id__gt=last_id).order_by('id').limit(BATCH_SIZE)
+
+    while batch:
+        # 提前拉下一批
+        next_last_id = batch[-1].id
+        next_batch_task = XueqiuZHHistory.filter(id__gt=next_last_id).order_by('id').limit(BATCH_SIZE)
+
+        update_tasks = []
+        symbols_to_insert = []
 
         for record in batch:
             last_id = record.id
             try:
-
                 year_values = defaultdict(list)
-
                 data = json.loads(record.history)
                 min_value = float("inf")
                 his_len = 0
+
                 for d in data:
                     his_len += 1
                     if "value" in d and isinstance(d["value"], (int, float)):
@@ -53,19 +61,17 @@ async def get_good_zh_and_draw_down():
                             min_value = min(min_value, value)
                             year = datetime.strptime(date_str, "%Y-%m-%d").year
                             year_values[year].append(value)
-                        except:
+                        except Exception:
                             continue
 
-                # 年度最大回撤 JSON 计算
                 drawdown_by_year = (
                     {str(year): max_drawdown(vals) for year, vals in year_values.items() if len(vals) >= 10} if year_values else None
                 )
                 if drawdown_by_year:
-                    await XueqiuZHIndex.filter(symbol=record.symbol).update(draw_down=drawdown_by_year)
+                    update_tasks.append(XueqiuZHIndex.filter(symbol=record.symbol).update(draw_down=drawdown_by_year))
 
-                # 过滤出符合条件的组合（运营时间 >3年 + 净值始终>=1）
                 if his_len >= 365 * 3 and min_value >= 1:
-                    symbols.append({'symbol': record.symbol})
+                    symbols_to_insert.append({'symbol': record.symbol})
 
                 logger.info(
                     f"组合:{record.name}-{record.symbol} 长度: {his_len}, 最小净值: {min_value:.4f}, 符合条件:{'✅' if his_len >= 365 * 3 and min_value >= 1 else '🚫'}"
@@ -74,14 +80,21 @@ async def get_good_zh_and_draw_down():
             except Exception as e:
                 logger.warning(f"Parse failed for {record.symbol}: {e}")
 
-        if symbols:
-            mongo_client = MongoClient(mongo_uri)
-            db = mongo_client[mongo_config.db_name]
-            collection = db["analyze"]
-            collection.insert_many(symbols, ordered=False)
-            mongo_client.close()
+        # 批量update
+        if update_tasks:
+            await asyncio.gather(*update_tasks)
 
+        # 批量插入mongo
+        if symbols_to_insert:
+            collection.insert_many(symbols_to_insert, ordered=False)
+
+        # 写入 last_id
         with open("analyse_last_id.txt", "w") as f:
             f.write(str(last_id))
 
-        logger.success(f"成功筛选 {len(symbols)} 条symbol到 MongoDB, last_id: {last_id}")
+        logger.success(f"成功处理 {len(batch)} 条数据, 插入 Mongo {len(symbols_to_insert)} 条, last_id: {last_id}")
+
+        # 等待下一批
+        batch = await next_batch_task
+
+    mongo_client.close()
