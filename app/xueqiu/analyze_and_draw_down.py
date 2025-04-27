@@ -3,17 +3,11 @@ import json
 from collections import defaultdict
 from datetime import datetime
 from loguru import logger
-from motor.motor_asyncio import AsyncIOMotorClient
-from app.xueqiu.model import XueqiuZHHistory, XueqiuZHIndex
-from common.global_variant import mongo_uri, mongo_config
+from app.xueqiu.model import XueqiuZHHistory, XueqiuZHIndex, XueqiuZHPicked
 
-BATCH_SIZE = 500
+BATCH_SIZE = 400
 MAX_WORKERS = 5  # 同时最多处理5个batch
 QUEUE_SIZE = 10  # 拉取队列最大长度，避免堆爆
-
-mongo_client = AsyncIOMotorClient(mongo_uri)
-db = mongo_client[mongo_config.db_name]
-collection = db["analyze"]
 
 
 def max_drawdown(values):
@@ -62,7 +56,7 @@ async def process_batches(queue: asyncio.Queue):
         t0 = datetime.now()
 
         update_tasks = []
-        mongo_docs = []
+        picked_symbols = []
         new_last_id = batch[-1].id
 
         for record in batch:
@@ -94,21 +88,18 @@ async def process_batches(queue: asyncio.Queue):
                     )
 
                 if his_len >= 365 * 3 and min_value >= 1:
-                    mongo_docs.append({'symbol': record.symbol})
+                    picked_symbols.append(XueqiuZHPicked(symbol=record.symbol))
 
             except Exception as e:
                 logger.warning(f"Parse failed for {record.symbol}: {e}")
 
-        # 并发 update draw_down
-        if update_tasks:
-            await asyncio.gather(*update_tasks, return_exceptions=True)
-
-        # 异步批量插入 MongoDB
-        if mongo_docs:
-            try:
-                await collection.insert_many(mongo_docs, ordered=False)
-            except Exception as e:
-                logger.warning(f"Mongo insert_many failed: {e}")
+        try:
+            await asyncio.gather(
+                asyncio.gather(*update_tasks, return_exceptions=True),
+                XueqiuZHPicked.bulk_create(picked_symbols, batch_size=1000, on_conflict_ignore=True) if picked_symbols else asyncio.sleep(0)
+            )
+        except Exception as e:
+            logger.warning(f"批处理异常（但已忽略错误），原因: {e}")
 
         # 更新 last_id
         last_id = new_last_id
@@ -117,7 +108,6 @@ async def process_batches(queue: asyncio.Queue):
 
         t1 = datetime.now()
         logger.success(f"处理完 batch, 批大小: {len(batch)}, 用时: {(t1 - t0).total_seconds():.2f}s, 更新 last_id: {last_id}")
-
 
 async def get_good_zh_and_draw_down():
     try:
@@ -132,5 +122,3 @@ async def get_good_zh_and_draw_down():
     consumers = [asyncio.create_task(process_batches(queue)) for _ in range(MAX_WORKERS)]
 
     await asyncio.gather(producer, *consumers)
-
-    await mongo_client.close()

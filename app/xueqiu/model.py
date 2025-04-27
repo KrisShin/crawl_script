@@ -1,4 +1,4 @@
-from tortoise import fields
+from tortoise import fields, models
 from app.model import BaseModel
 
 
@@ -53,6 +53,7 @@ class XueqiuZHHistory(BaseModel):
     name = fields.CharField(null=True, max_length=128, description='组合名称')
     symbol = fields.CharField(max_length=16, null=False, db_index=True, description='组合代号')
     history = fields.TextField(description='历史数据')
+
     class Meta:
         table = 'xueqiu_zh_history'
 
@@ -140,6 +141,17 @@ class XueqiuRebalancing(BaseModel):
 
     class Meta:
         table = "xueqiu_rebalancing"
+
+
+class XueqiuZHPicked(models.Model):
+    """雪球精选组合代号"""
+
+    symbol = fields.CharField(max_length=50, null=False, description="组合代号", pk=True)
+
+    class Meta:
+        table = "xueqiu_zh_picked"
+
+
 '''
 {
     "id": 190146035,
