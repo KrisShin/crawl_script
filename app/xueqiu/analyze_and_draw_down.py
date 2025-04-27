@@ -8,8 +8,8 @@ from app.xueqiu.model import XueqiuZHHistory, XueqiuZHIndex
 from common.global_variant import mongo_uri, mongo_config
 
 BATCH_SIZE = 500
-MAX_WORKERS = 5
-QUEUE_SIZE = 10
+MAX_WORKERS = 5  # 同时最多处理5个batch
+QUEUE_SIZE = 10  # 拉取队列最大长度，避免堆爆
 
 mongo_client = AsyncIOMotorClient(mongo_uri)
 db = mongo_client[mongo_config.db_name]
@@ -28,11 +28,14 @@ def max_drawdown(values):
 
 
 async def fetch_batches(start_id, queue: asyncio.Queue):
+    """
+    不断拉取数据并放入 queue
+    """
     current_id = start_id
     while True:
         batch = await XueqiuZHHistory.filter(id__gt=current_id).order_by('id').limit(BATCH_SIZE)
         if not batch:
-            await queue.put(None)
+            await queue.put(None)  # 拉取结束，通知消费者
             break
 
         await queue.put(batch)
@@ -40,6 +43,9 @@ async def fetch_batches(start_id, queue: asyncio.Queue):
 
 
 async def process_batches(queue: asyncio.Queue):
+    """
+    消费 queue 中的 batch，异步处理
+    """
     last_id = 0
     try:
         with open("analyse_last_id.txt", "r") as f:
@@ -50,7 +56,7 @@ async def process_batches(queue: asyncio.Queue):
     while True:
         batch = await queue.get()
         if batch is None:
-            queue.put_nowait(None)
+            queue.put_nowait(None)  # 继续传递结束信号给其他worker
             break
 
         t0 = datetime.now()
@@ -93,27 +99,24 @@ async def process_batches(queue: asyncio.Queue):
             except Exception as e:
                 logger.warning(f"Parse failed for {record.symbol}: {e}")
 
-        try:
-            # 批量更新 + 插入保护在事务内
-            async with await mongo_client.start_session() as session:
-                async with session.start_transaction():
-                    if update_tasks:
-                        await asyncio.gather(*update_tasks, return_exceptions=True)
+        # 并发 update draw_down
+        if update_tasks:
+            await asyncio.gather(*update_tasks, return_exceptions=True)
 
-                    if mongo_docs:
-                        await collection.insert_many(mongo_docs, ordered=False, session=session)
+        # 异步批量插入 MongoDB
+        if mongo_docs:
+            try:
+                await collection.insert_many(mongo_docs, ordered=False)
+            except Exception as e:
+                logger.warning(f"Mongo insert_many failed: {e}")
 
-                    # 更新 last_id 到文件
-                    with open("analyse_last_id.txt", "w") as f:
-                        f.write(str(new_last_id))
-
-        except Exception as e:
-            logger.error(f"事务失败！回滚本批处理: {e}")
-            # 可选补偿机制，比如把 mongo_docs 存到失败日志，后面专门处理失败的数据
-            return  # 本批放弃，继续下批（安全优先）
+        # 更新 last_id
+        last_id = new_last_id
+        with open("analyse_last_id.txt", "w") as f:
+            f.write(str(last_id))
 
         t1 = datetime.now()
-        logger.success(f"事务成功提交 batch，处理 {len(batch)}条，用时: {(t1 - t0).total_seconds():.2f}s, last_id: {new_last_id}")
+        logger.success(f"处理完 batch, 批大小: {len(batch)}, 用时: {(t1 - t0).total_seconds():.2f}s, 更新 last_id: {last_id}")
 
 
 async def get_good_zh_and_draw_down():
