@@ -8,8 +8,8 @@
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
-            "program": "import_user.py",
-            "args": ["ana"],
+            "program": "main.py",
+            "args": ["ajk"],
             "console": "integratedTerminal"
         }
     ]
