@@ -17,7 +17,7 @@ proxy_url = "http://%(user)s:%(pwd)s@%(proxy)s/" % {
 
 proxies = httpx.Proxy(url=proxy_url)
 
-ua = UserAgent()
+ua = UserAgent(platforms='desktop')
 
 
 mongo_config = config.get('database.mongodb')
@@ -53,4 +53,13 @@ async def init_db(create_db=False) -> None:
         raise Exception('MySQL config load failed.')
     db_uri = f'mysql://{mysql_config.user}:{mysql_config.passwd}@{mysql_config.host}:{mysql_config.port}/{mysql_config.db_name}'
     logger.info(f'db_uri: {db_uri}')
-    await Tortoise.init(db_url=db_uri, modules={'models': ["app.xueqiu.model"]}, _create_db=create_db)
+    await Tortoise.init(
+        db_url=db_uri,
+        modules={
+            'models': [
+                "app.xueqiu.model",
+                "app.anjuke.model",
+            ]
+        },
+        _create_db=create_db,
+    )

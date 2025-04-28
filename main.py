@@ -1,6 +1,7 @@
 import asyncio
 import click
 from loguru import logger
+from app.anjuke.main import fetch_anjuke
 from common.global_variant import init_db
 from app.xueqiu.main import analyze, crawl_index, crawl_rebalancing, crawl_zh, crawl_zh_async, crawl_zh_history_async, crawl_user_async
 
@@ -14,7 +15,9 @@ def connect_db(db_type: str):
 
 @click.command()
 @click.argument(
-    'spider_name', type=click.Choice(['index', 'zh_single', 'zh', 'zh_his', 'user', 'reb', 'ana'], case_sensitive=False), required=False
+    'spider_name',
+    type=click.Choice(['index', 'zh_single', 'zh', 'zh_his', 'user', 'reb', 'ana', 'ajk'], case_sensitive=False),
+    required=False,
 )
 @click.argument('start_id', type=int, required=False)
 @click.argument('end_id', type=int, required=False)
@@ -44,6 +47,8 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
         asyncio.run(crawl_rebalancing(start_id, end_id, coroutine_count))
     elif spider_name == 'ana':
         asyncio.run(analyze())
+    elif spider_name == 'ajk':
+        asyncio.run(fetch_anjuke())
     else:
         logger.error(f"未知的爬虫名称: {spider_name}")
 

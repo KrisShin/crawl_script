@@ -32,7 +32,10 @@ async def init_mysql() -> None:
     await Tortoise.generate_schemas()
     client = Tortoise.get_connection('default')
     apps = Tortoise.apps
-    await move_time_field(client, apps)
+    try:
+        await move_time_field(client, apps)
+    except:
+        pass
     logger.success("Init Mysql Success")
 
 

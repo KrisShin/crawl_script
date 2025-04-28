@@ -3,12 +3,12 @@ import httpx
 from loguru import logger
 
 from app.xueqiu.analyze_and_draw_down import get_good_zh_and_draw_down
-from app.xueqiu.spiders.cookie_spider import main as cookie_spider
-from app.xueqiu.spiders.index_spider import XueqiuIndexSpider
-from app.xueqiu.spiders.user_spider import XueqiuUserSpider
-from app.xueqiu.spiders.zh_hostry_spider import XueqiuZHHistorySpider
-from app.xueqiu.spiders.zh_index_spider import XueqiuZHSpider
-from app.xueqiu.spiders.zh_rebalancing_spider import XueqiuZHRebalancingSpider
+from app.xueqiu.spider.cookie_spider import main as cookie_spider
+from app.xueqiu.spider.index_spider import XueqiuIndexSpider
+from app.xueqiu.spider.user_spider import XueqiuUserSpider
+from app.xueqiu.spider.zh_hostry_spider import XueqiuZHHistorySpider
+from app.xueqiu.spider.zh_index_spider import XueqiuZHSpider
+from app.xueqiu.spider.zh_rebalancing_spider import XueqiuZHRebalancingSpider
 from common.global_variant import proxies
 
 TYPE_MARKET_MAPPING = {
