@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 from loguru import logger
 
-from app.xueqiu.model import XueqiuZHHistory, XueqiuZHPicked
+from app.xueqiu.model import XueqiuZHHistory, XueqiuZHIndex, XueqiuZHPicked
 
 TOTAL_SYMBOLS_ESTIMATE = 1315693  # 预估总量，for 进度条用
 BATCH_SIZE = 1000
@@ -36,8 +36,9 @@ async def fetch_batches(start_id, queue: asyncio.Queue):
     不断拉取数据并放入 queue
     """
     current_id = start_id
+    all_symbols = await XueqiuZHIndex.filter(draw_down__not=None).values_list('symbol', flat=True)
     while True:
-        batch = await XueqiuZHHistory.filter(id__gt=current_id).order_by('id').limit(BATCH_SIZE)
+        batch = await XueqiuZHHistory.filter(id__gt=current_id, id__in=all_symbols).order_by('id').limit(BATCH_SIZE)
         if not batch:
             await queue.put(None)  # 拉取结束，通知消费者
             break
