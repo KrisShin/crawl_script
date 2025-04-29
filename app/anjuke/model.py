@@ -20,7 +20,7 @@ class AnjukeSHCommunity(BaseModel):
     water_electricity_type = fields.CharField(max_length=32, null=True, description="供水供电类型")  # 民用
     parking_spaces_info = fields.IntField(max_length=64, null=True, description="停车位数")  # 70(1:0.1)
     property_fee = fields.FloatField(null=True, description="物业费 (元/平米/月)")  # 1.20
-    parking_fee = fields.FloatField(null=True, description="停车费 (元/月)")  # 150
+    parking_fee = fields.CharField(max_length=128, null=True, description="停车费 (元/月)")  # 150
     parking_management_fee = fields.CharField(max_length=32, null=True, description="车位管理费")  # 暂无
     property_company = fields.CharField(max_length=128, null=True, description="物业公司")  # 上海安得物业管理有限公司
     address = fields.CharField(max_length=256, null=True, description="小区地址")  # 内江路168弄

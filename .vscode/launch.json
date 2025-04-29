@@ -9,7 +9,10 @@
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",
-            "args": ["ajk"],
+            "args": [
+                "ajk",
+                "1"
+            ],
             "console": "integratedTerminal"
         }
     ]
