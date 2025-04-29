@@ -1,21 +1,12 @@
-from datetime import datetime
-import json
 import time
 import random
 import httpx
 from loguru import logger
-from pymongo import UpdateOne, MongoClient
 from scrapy import Selector
 
 from app.base_spider import BaseSpider
 from app.anjuke.model import AnjukeSHCommunity
-from common.global_variant import (
-    ua,
-    mongo_uri,
-    mongo_config,
-    symbol_all_list,
-    user_cookies,
-)
+from common.global_variant import ua
 
 
 class AnjukeSHCommunitySpider(BaseSpider):
@@ -44,18 +35,18 @@ class AnjukeSHCommunitySpider(BaseSpider):
                                 "name": community_info["name"],
                                 "property_type": community_info["物业类型"],
                                 "ownership_type": community_info["权属类别"],
-                                "completion_year": community_info["竣工时间"] and int(community_info["竣工时间"][:-1]),
-                                "property_years": community_info["产权年限"] and int(community_info["产权年限"][:-1]),
-                                "total_households": community_info["总户数"] and int(community_info["总户数"][:-1]),
-                                "total_building_area": community_info["总建面积"] and float( community_info["总建面积"][:-1] ),
-                                "plot_ratio": community_info["容积率"] and float(community_info["容积率"]),
-                                "greening_rate": community_info["绿化率"] and float(community_info["绿化率"][:-1]),
+                                "completion_year": community_info["竣工时间"],
+                                "property_years": community_info["产权年限"],
+                                "total_households": community_info["总户数"],
+                                "total_building_area": community_info["总建面积"],
+                                "plot_ratio": community_info["容积率"],
+                                "greening_rate": community_info["绿化率"],
                                 "building_type": community_info["建筑类型"],
                                 "business_circle": community_info["所属商圈"],
                                 "unified_heating": community_info["统一供暖"] == "是",
                                 "water_electricity_type": community_info["供水供电"],
-                                "parking_spaces_info": community_info["停车位"] and int( community_info["停车位"].split("(")[0] ),
-                                "property_fee": community_info["物业费"] and float( community_info["物业费"].split("元")[0] ),
+                                "parking_spaces_info": community_info["停车位"],
+                                "property_fee": community_info["物业费"],
                                 "parking_fee": community_info["停车费"],
                                 "parking_management_fee": community_info["车位管理费"],
                                 "property_company": community_info["物业公司"],
@@ -63,9 +54,7 @@ class AnjukeSHCommunitySpider(BaseSpider):
                                 "developer": community_info["开发商"],
                             }
                         )
-                        await AnjukeSHCommunity.update_or_create(
-                            id=community_info["id"], defaults=community_info
-                        )
+                        await AnjukeSHCommunity.update_or_create(id=community_info["id"], defaults=community_info)
                         time.sleep(30 + random.randint(5, 15))
                         break
                     except Exception as err:
@@ -95,9 +84,7 @@ class AnjukeSHCommunitySpider(BaseSpider):
                 logger.error(f"获取小区列表失败: page:{page}")
                 time.sleep(120)
             selector = Selector(text=resp.text)
-            community_list = selector.xpath(
-                '//*[@id="__layout"]/div/section/section[3]/section/div[2]/a/@href'
-            ).getall()
+            community_list = selector.xpath('//*[@id="__layout"]/div/section/section[3]/section/div[2]/a/@href').getall()
             logger.success(f"获取小区列表成功: page:{page}")
             return community_list
         except Exception as e:
@@ -121,9 +108,7 @@ class AnjukeSHCommunitySpider(BaseSpider):
                 logger.error(f"获取小区详情失败: url:{info_url}")
                 time.sleep(120)
             selector = Selector(text=resp.text)
-            community_key = selector.xpath(
-                '//*[@id="__layout"]/div/div[2]/div[3]/div[2]/div[1]/div[2]/div/div/div[1]/text()'
-            ).getall()
+            community_key = selector.xpath('//*[@id="__layout"]/div/div[2]/div[3]/div[2]/div[1]/div[2]/div/div/div[1]/text()').getall()
             community_values1 = selector.xpath(
                 '//*[@id="__layout"]/div/div[2]/div[3]/div[2]/div[1]/div[2]/div/div/div[2]/div[1]/text()'
             ).getall()
@@ -133,18 +118,13 @@ class AnjukeSHCommunitySpider(BaseSpider):
             resp = dict(
                 zip(
                     community_key,
-                    [
-                        None if "暂无" in v else v.strip()
-                        for v in community_values1 + community_values2
-                    ],
+                    [None if "暂无" in v else v.strip() for v in community_values1 + community_values2],
                 )
             )
-            resp["name"] = selector.xpath(
-                "/html/body/div[1]/div/div/div[2]/div[2]/div/h1/text()"
-            ).getall()[0]
+            resp["name"] = selector.xpath("/html/body/div[1]/div/div/div[2]/div[2]/div/h1/text()").getall()[0]
             return resp
         except Exception as e:
             from traceback import print_exc
 
             print_exc()
-            logger.error(f"请求失败: {e}")
+            logger.error(f"请求失败: {info_url} {e}")
