@@ -8,7 +8,7 @@ from pymongo import UpdateOne, MongoClient
 
 from app.base_spider import BaseSpider
 from app.xueqiu.model import XueqiuRebalancing
-from common.global_variant import ua, mongo_uri, mongo_config, symbol_all_list, user_cookies
+from common.global_variant import ua, mongo_uri, mongo_config, symbol_all_list, user_cookies, symbol_new_list
 
 md5_list = [
     'euG%3DiIgtY5AIqGNDQ2xBKD%3DO0Qp2eDthTCaq5D',
@@ -33,6 +33,7 @@ class XueqiuZHRebalancingSpider(BaseSpider):
         super().__init__(client=client, model=XueqiuRebalancing)
         self.base_url = 'https://xueqiu.com/cubes/rebalancing/history.json?cube_symbol=%s&count=50&page=%d&md5__1038=%s'
         self.cookie = list(user_cookies.values())[index % 4]
+        self.symbol_list = symbol_all_list if index != 3 else symbol_new_list
 
     def crawl(self, zh_index: int, max_index: int):
         rebalancing_list = []
@@ -43,11 +44,11 @@ class XueqiuZHRebalancingSpider(BaseSpider):
             while page <= max_page:
                 if page > 50:
                     break
-                index_url = self.base_url % (symbol_all_list[zh_index], page, random.choice(md5_list))
+                index_url = self.base_url % (self.symbol_list[zh_index], page, random.choice(md5_list))
                 try:
                     resp = self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': self.cookie}, timeout=30)
                     if resp.status_code != 200:
-                        logger.error(f'获取组合调仓数据失败: index:{zh_index}, zh_id:{symbol_all_list[zh_index]} code: {resp.status_code}, {resp.text}')
+                        logger.error(f'获取组合调仓数据失败: index:{zh_index}, zh_id:{self.symbol_list[zh_index]} code: {resp.status_code}, {resp.text}')
                         time.sleep(120)
                     data = resp.json()
                     if page == 1:
@@ -55,13 +56,13 @@ class XueqiuZHRebalancingSpider(BaseSpider):
 
                     rebalancing_list.extend(
                         [
-                            {**item, "crawl_time": update_time, 'symbol': symbol_all_list[zh_index], 'rebalancing_histories': json.dumps(item['rebalancing_histories'])}
+                            {**item, "crawl_time": update_time, 'symbol': self.symbol_list[zh_index], 'rebalancing_histories': json.dumps(item['rebalancing_histories'])}
                             for item in data['list']
                         ]
                     )
                     # with open(f'xueqiu_zh_id', 'a') as f:
                     #     f.write(f'ZH{zh_id}\n')
-                    logger.success(f'获取组合调仓数据成功: index: {zh_index} ZHID:{symbol_all_list[zh_index]}, crawled:{len(data["list"])}')
+                    logger.success(f'获取组合调仓数据成功: index: {zh_index} ZHID:{self.symbol_list[zh_index]}, crawled:{len(data["list"])}')
                     page += 1
                 except Exception as e:
                     logger.error(f'请求失败: {e}')

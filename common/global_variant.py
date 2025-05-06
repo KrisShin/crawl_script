@@ -31,16 +31,20 @@ mongo_uri = 'mongodb://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db_name)s' % {
 }
 
 user_id_list = []
-with open('./user_id.json', 'r') as f:
-    user_id_list = json.load(f)
+# with open('./user_id.json', 'r') as f:
+#     user_id_list = json.load(f)
 
 symbol_list = []
-with open('./zh_his.json', 'r') as f:
-    symbol_list = json.load(f)
+# with open('./zh_his.json', 'r') as f:
+#     symbol_list = json.load(f)
 
 symbol_all_list = []
 with open('./symbol_all.json', 'r') as f:
     symbol_all_list = json.load(f)
+
+symbol_new_list = []
+with open('./n_symbol.json', 'r') as f:
+    symbol_new_list = json.load(f)
 
 user_cookies = {}
 with open('./phone_cookie.json', 'r') as f:
