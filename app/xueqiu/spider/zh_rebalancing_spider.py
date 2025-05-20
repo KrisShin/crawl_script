@@ -33,7 +33,8 @@ class XueqiuZHRebalancingSpider(BaseSpider):
         super().__init__(client=client, model=XueqiuRebalancing)
         self.base_url = 'https://xueqiu.com/cubes/rebalancing/history.json?cube_symbol=%s&count=50&page=%d&md5__1038=%s'
         self.cookie = list(user_cookies.values())[index % 4]
-        self.symbol_list = symbol_all_list if index != 3 else symbol_new_list
+        # self.symbol_list = symbol_all_list if index != 3 else symbol_new_list
+        self.symbol_list = symbol_new_list
 
     def crawl(self, zh_index: int, max_index: int):
         rebalancing_list = []

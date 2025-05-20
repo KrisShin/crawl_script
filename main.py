@@ -2,6 +2,7 @@ import asyncio
 import click
 from loguru import logger
 from app.anjuke.main import fetch_anjuke
+from app.xueqiu.script.import_rebalancing import import_reb
 from common.global_variant import init_db
 from app.xueqiu.main import (
     analyze,
@@ -73,3 +74,6 @@ if __name__ == "__main__":
     # with open('./user_id.json', 'w') as f:
     #     f.write(json.dumps([item['owner_id'] for item in data]))
     # print(len(data))
+    # from tortoise import run_async
+
+    # run_async(import_reb())

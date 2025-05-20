@@ -43,7 +43,7 @@ with open('./symbol_all.json', 'r') as f:
     symbol_all_list = json.load(f)
 
 symbol_new_list = []
-with open('./n_symbol.json', 'r') as f:
+with open('./zh_his.json', 'r') as f:
     symbol_new_list = json.load(f)
 
 user_cookies = {}
