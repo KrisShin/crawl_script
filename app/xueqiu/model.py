@@ -48,7 +48,7 @@ class XueqiuZHIndex(BaseModel):
 
 
 class XueqiuZHHistory(BaseModel):
-    """雪球组合指数模型"""
+    """雪球组合历史数据模型"""
 
     name = fields.CharField(null=True, max_length=128, description='组合名称')
     symbol = fields.CharField(max_length=16, null=False, db_index=True, description='组合代号')
