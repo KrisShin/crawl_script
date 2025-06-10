@@ -152,49 +152,16 @@ class XueqiuZHPicked(models.Model):
         table = "xueqiu_zh_picked"
 
 
-'''
-{
-    "id": 190146035,
-    "status": "success",
-    "cube_id": 1037635,
-    "prev_bebalancing_id": 189952247,
-    "category": "sys_rebalancing",
-    "exe_strategy": "market_all",
-    "created_at": 1743380077719,
-    "updated_at": 1743380077719,
-    "cash": 96.97,
-    "error_code": null,
-    "cash_value": 0.01069492,
-    "error_message": null,
-    "error_status": null,
-    "holdings": null,
-    "rebalancing_histories": [
-        {
-            "id": 242448853,
-            "rebalancing_id": 190146035,
-            "stock_id": 1001695,
-            "stock_name": "顺络电子",
-            "stock_symbol": "SZ002138",
-            "volume": 0.00689206,
-            "price": 29.55,
-            "net_value": 0.2037,
-            "weight": 3.03,
-            "target_weight": 3.03,
-            "prev_weight": 2.98,
-            "prev_target_weight": 2.98,
-            "prev_weight_adjusted": 2.97,
-            "prev_volume": 0.0067549,
-            "prev_price": 29.75,
-            "prev_net_value": 0.20095827,
-            "proactive": true,
-            "created_at": 1743380077719,
-            "updated_at": 1743380077719,
-            "target_volume": 0.00689206,
-            "prev_target_volume": 0.00676081
-        }
-    ],
-    "comment": "",
-    "diff": 0,
-    "new_buy_count": 0
-}
-'''
+class XueqiuZHStockContrib(models.Model):
+    """雪球组合中每支股票的贡献"""
+
+    symbol = fields.CharField(max_length=50, null=False, description="组合代号", db_index=True)
+    portfolio_name = fields.CharField(max_length=128, description="组合名称")
+    owner_name = fields.CharField(max_length=128, description="组合创建者名字", db_index=True)
+    initial_portfolio_value = fields.FloatField(description="初始价值")
+    current_net_value = fields.FloatField(description="当前净值")
+    total_gain_pct = fields.FloatField(description="总收益百分百")
+    stocks_performance = fields.JSONField(description="所有股票表现")
+
+    class Meta:
+        table = "xueqiu_zh_stock_contirb"

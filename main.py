@@ -6,6 +6,7 @@ from app.xueqiu.script.import_rebalancing import import_reb
 from common.global_variant import init_db
 from app.xueqiu.main import (
     analyze,
+    contrib,
     crawl_index,
     crawl_rebalancing,
     crawl_zh,
@@ -59,6 +60,8 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
         asyncio.run(crawl_rebalancing(start_id, end_id, coroutine_count))
     elif spider_name == "ana":
         asyncio.run(analyze())
+    elif spider_name == "ctb":
+        asyncio.run(contrib())
     elif spider_name == "ajk":
         asyncio.run(fetch_anjuke(start_id))
     else:
