@@ -63,7 +63,14 @@ async def init_db(create_db=False) -> None:
             'models': [
                 "app.xueqiu.model",
                 "app.anjuke.model",
+                "app.research_report.model",
             ]
         },
         _create_db=create_db,
     )
+
+
+async def close_db():
+    """关闭数据库连接"""
+    await Tortoise.close_connections()
+    print("数据库连接已关闭。")

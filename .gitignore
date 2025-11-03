@@ -11,3 +11,6 @@ data_json
 **/.DS_Store
 
 analyse_last_id.txt
+
+# download files
+**/downloads

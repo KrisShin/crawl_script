@@ -1,0 +1,24 @@
+2025-11-03 15:01:35.245 | INFO     | common.global_variant:init_db:59 - db_uri: mysql://crawl_user:c=dE)g@a_=F9-d63%!_B@rm-2zeow7434k0581788yo.mysql.rds.aliyuncs.com:3306/crawl_db
+2025-11-03 15:01:35.259 | SUCCESS  | __main__:connect_db:24 - Connect Mysql Success
+2025-11-03 15:06:38.338 | INFO     | common.global_variant:init_db:59 - db_uri: mysql://crawl_user:c=dE)g@a_=F9-d63%!_B@rm-2zeow7434k0581788yo.mysql.rds.aliyuncs.com:3306/crawl_db
+2025-11-03 15:06:38.353 | SUCCESS  | __main__:connect_db:24 - Connect Mysql Success
+2025-11-03 15:06:40.635 | WARNING  | app.research_report.rmi_spider:upload_to_oss:73 - OSS 客户端未初始化，跳过上传。
+2025-11-03 15:06:46.909 | WARNING  | app.research_report.rmi_spider:upload_to_oss:73 - OSS 客户端未初始化，跳过上传。
+2025-11-03 15:07:14.756 | INFO     | common.global_variant:init_db:59 - db_uri: mysql://crawl_user:c=dE)g@a_=F9-d63%!_B@rm-2zeow7434k0581788yo.mysql.rds.aliyuncs.com:3306/crawl_db
+2025-11-03 15:07:14.769 | SUCCESS  | __main__:connect_db:24 - Connect Mysql Success
+2025-11-03 15:07:14.769 | INFO     | app.research_report.rmi_spider:init_oss_client:41 - 正在初始化 OSS 客户端...
+2025-11-03 15:07:14.769 | ERROR    | app.research_report.rmi_spider:init_oss_client:62 - OSS 客户端初始化失败: '_ConfigNode' object has no attribute 'access_key_id'
+2025-11-03 15:07:37.129 | INFO     | common.global_variant:init_db:59 - db_uri: mysql://crawl_user:c=dE)g@a_=F9-d63%!_B@rm-2zeow7434k0581788yo.mysql.rds.aliyuncs.com:3306/crawl_db
+2025-11-03 15:07:37.142 | SUCCESS  | __main__:connect_db:24 - Connect Mysql Success
+2025-11-03 15:07:37.142 | INFO     | app.research_report.rmi_spider:init_oss_client:41 - 正在初始化 OSS 客户端...
+2025-11-03 15:07:37.142 | ERROR    | app.research_report.rmi_spider:init_oss_client:62 - OSS 客户端初始化失败: '_ConfigNode' object has no attribute 'get'
+2025-11-03 15:11:49.431 | INFO     | common.global_variant:init_db:59 - db_uri: mysql://crawl_user:c=dE)g@a_=F9-d63%!_B@rm-2zeow7434k0581788yo.mysql.rds.aliyuncs.com:3306/crawl_db
+2025-11-03 15:11:49.447 | SUCCESS  | __main__:connect_db:24 - Connect Mysql Success
+2025-11-03 15:11:49.447 | INFO     | app.research_report.rmi_spider:init_oss_client:41 - 正在初始化 OSS 客户端...
+2025-11-03 15:11:49.447 | ERROR    | app.research_report.rmi_spider:init_oss_client:62 - OSS 客户端初始化失败: 'access_key_id'
+2025-11-03 15:12:08.732 | INFO     | common.global_variant:init_db:59 - db_uri: mysql://crawl_user:c=dE)g@a_=F9-d63%!_B@rm-2zeow7434k0581788yo.mysql.rds.aliyuncs.com:3306/crawl_db
+2025-11-03 15:12:08.745 | SUCCESS  | __main__:connect_db:24 - Connect Mysql Success
+2025-11-03 15:12:08.746 | INFO     | app.research_report.rmi_spider:init_oss_client:41 - 正在初始化 OSS 客户端...
+2025-11-03 15:12:08.746 | INFO     | app.research_report.rmi_spider:init_oss_client:60 - OSS 客户端初始化成功。Bucket: research-report, Endpoint: https://oss-cn-chengdu-internal.aliyuncs.com
+2025-11-03 15:12:10.576 | INFO     | app.research_report.rmi_spider:upload_to_oss:77 - 正在上传 app/research_report/downloads/十年承诺 迈向中和：十大关键清洁技术榜单/十年承诺-迈向中和：十大关键清洁技术榜单.pdf 到 OSS (Key: 十年承诺 迈向中和：十大关键清洁技术榜单/十年承诺-迈向中和：十大关键清洁技术榜单.pdf)...
+2025-11-03 15:12:16.489 | INFO     | app.research_report.rmi_spider:upload_to_oss:77 - 正在上传 app/research_report/downloads/气候科技初创企业投资观察系列：绿氢产业各环节技术发展和投融资趋势解析/气候科技初创企业投资观察系列-绿氢产业各环节技术发展和投-融资趋势解析.pdf 到 OSS (Key: 气候科技初创企业投资观察系列：绿氢产业各环节技术发展和投融资趋势解析/气候科技初创企业投资观察系列-绿氢产业各环节技术发展和投-融资趋势解析.pdf)...

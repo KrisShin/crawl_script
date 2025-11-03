@@ -57,6 +57,13 @@ class ConfigLoader(object):
         """访问数据库配置的快捷方式"""
         return self._config.database
 
+    @property
+    def oss(self):
+        """访问 OSS 配置的快捷方式"""
+        if not hasattr(self._config, 'oss'):
+            raise AttributeError("config.yaml 中缺少 'oss' 配置节")
+        return self._config.oss
+
     def get(self, key_path: str, default: Any = None) -> Optional[Any]:
         """
         通过点分路径获取配置值

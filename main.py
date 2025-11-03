@@ -2,6 +2,7 @@ import asyncio
 import click
 from loguru import logger
 from app.anjuke.main import fetch_anjuke
+from app.research_report.rmi_spider import main as run_rmi_crawl
 from app.xueqiu.script.import_rebalancing import import_reb
 from common.global_variant import init_db
 from app.xueqiu.main import (
@@ -27,7 +28,7 @@ def connect_db(db_type: str):
 @click.argument(
     "spider_name",
     type=click.Choice(
-        ["index", "zh_single", "zh", "zh_his", "user", "reb", "ana", "ajk"],
+        ["index", "zh_single", "zh", "zh_his", "user", "reb", "ana", "ajk", "rmi"],
         case_sensitive=False,
     ),
     required=False,
@@ -46,7 +47,10 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
     """
     connect_db("mysql")  # 连接数据库
 
-    if spider_name == "index":
+    if spider_name == "rmi":
+        # 注意: Scrapy 爬虫不需要 connect_db, 除非你在 pipeline 中自己实现
+        asyncio.run(run_rmi_crawl())
+    elif spider_name == "index":
         crawl_index()
     elif spider_name == "zh_single":
         crawl_zh()  # 单线程爬取
