@@ -65,7 +65,7 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
     elif spider_name == "ana":
         asyncio.run(analyze())
     elif spider_name == "ctb":
-        asyncio.run(contrib())
+        asyncio.run(contrib(start_id))
     elif spider_name == "ajk":
         asyncio.run(fetch_anjuke(start_id))
     else:

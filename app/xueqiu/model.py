@@ -133,14 +133,40 @@ class XueqiuRebalancing(BaseModel):
     error_code = fields.IntField(null=True, description="错误代码")
     error_message = fields.TextField(null=True, description="错误信息")
     error_status = fields.CharField(max_length=50, null=True, description="错误状态")
-    holdings = fields.JSONField(null=True, description="持仓信息")
-    rebalancing_histories = fields.JSONField(null=True, description="调仓明细 JSON 数据")
+    holdings = fields.TextField(null=True, description="持仓信息")
+    rebalancing_histories = fields.TextField(null=True, description="调仓明细 JSON 数据")
     comment = fields.TextField(null=True, description="用户备注")
     diff = fields.IntField(null=True, description="调仓差异值")
     new_buy_count = fields.IntField(null=True, description="新增买入数量")
 
     class Meta:
         table = "xueqiu_rebalancing"
+
+
+class XueqiuRebalancingNew(BaseModel):
+    """雪球组合调仓记录模型"""
+
+    symbol = fields.CharField(max_length=50, null=False, description="组合代号", db_index=True)
+    status = fields.CharField(max_length=50, null=True, description="调仓状态", db_index=True)
+    cube_id = fields.BigIntField(null=False, description="组合 ID", db_index=True)
+    prev_bebalancing_id = fields.BigIntField(null=True, description="上一次调仓 ID")
+    category = fields.CharField(max_length=50, null=True, description="调仓分类")
+    exe_strategy = fields.CharField(max_length=50, null=True, description="执行策略")
+    created_at = fields.BigIntField(null=True, description="创建时间戳")
+    updated_at = fields.BigIntField(null=True, description="更新时间戳")
+    cash = fields.FloatField(null=True, description="现金比例")
+    cash_value = fields.FloatField(null=True, description="现金价值")
+    error_code = fields.IntField(null=True, description="错误代码")
+    error_message = fields.TextField(null=True, description="错误信息")
+    error_status = fields.CharField(max_length=50, null=True, description="错误状态")
+    holdings = fields.TextField(null=True, description="持仓信息")
+    rebalancing_histories = fields.TextField(null=True, description="调仓明细 JSON 数据")
+    comment = fields.TextField(null=True, description="用户备注")
+    diff = fields.IntField(null=True, description="调仓差异值")
+    new_buy_count = fields.IntField(null=True, description="新增买入数量")
+
+    class Meta:
+        table = "xueqiu_rebalancing_new"
 
 
 class XueqiuZHPicked(models.Model):
@@ -164,4 +190,4 @@ class XueqiuZHStockContrib(models.Model):
     stocks_performance = fields.JSONField(description="所有股票表现")
 
     class Meta:
-        table = "xueqiu_zh_stock_contirb"
+        table = "xueqiu_zh_stock_contrib"

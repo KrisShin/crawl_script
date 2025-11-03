@@ -260,5 +260,5 @@ async def analyze():
     await get_good_zh_and_draw_down()
 
 
-async def contrib():
-    await calculate_portfolio_stock_contributions()
+async def contrib(mode):
+    await calculate_portfolio_stock_contributions(mode)

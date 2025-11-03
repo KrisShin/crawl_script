@@ -10,13 +10,9 @@
             "request": "launch",
             "program": "main.py",
             "args": [
-                "reb",
-                "0",
-                "216",
-                "4"
+                "ctb"
             ],
             "console": "integratedTerminal"
         },
-
     ]
 }
