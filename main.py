@@ -15,6 +15,7 @@ from app.xueqiu.main import (
     crawl_zh_history_async,
     crawl_user_async,
 )
+from app.nea_news.spider import main as crawl_nea_news
 
 
 def connect_db(db_type: str):
@@ -28,7 +29,7 @@ def connect_db(db_type: str):
 @click.argument(
     "spider_name",
     type=click.Choice(
-        ["index", "zh_single", "zh", "zh_his", "user", "reb", "ana", "ajk", "rmi"],
+        ["index", "zh_single", "zh", "zh_his", "user", "reb", "ana", "ajk", "rmi", "news"],
         case_sensitive=False,
     ),
     required=False,
@@ -68,6 +69,8 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
         asyncio.run(contrib(start_id))
     elif spider_name == "ajk":
         asyncio.run(fetch_anjuke(start_id))
+    elif spider_name == "news":
+        asyncio.run(crawl_nea_news())
     else:
         logger.error(f"未知的爬虫名称: {spider_name}")
 

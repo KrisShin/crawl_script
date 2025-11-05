@@ -62,6 +62,7 @@ async def init_db(create_db=False) -> None:
         modules={
             'models': [
                 "app.xueqiu.model",
+                "app.nea_news.model",
                 "app.anjuke.model",
                 "app.research_report.model",
             ]

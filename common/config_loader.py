@@ -63,6 +63,13 @@ class ConfigLoader(object):
         if not hasattr(self._config, 'oss'):
             raise AttributeError("config.yaml 中缺少 'oss' 配置节")
         return self._config.oss
+    
+    @property
+    def hunyuan(self):
+        """访问 OSS 配置的快捷方式"""
+        if not hasattr(self._config, 'hunyuan'):
+            raise AttributeError("config.yaml 中缺少 'hunyuan' 配置节")
+        return self._config.hunyuan
 
     def get(self, key_path: str, default: Any = None) -> Optional[Any]:
         """
