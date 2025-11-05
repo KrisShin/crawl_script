@@ -69,7 +69,7 @@ async def parse_search() -> Tuple[Dict, EVChargingInfrastructureData]:
     now = datetime.now()
     now = now.replace(day=1) - timedelta(days=1)
     keyword = KEYWORD % (now.year, now.month)
-    keyword = KEYWORD % (2025, 9)  # TODO: 测试用, 建议删除
+    # keyword = KEYWORD % (2025, 9)  # TODO: 测试用, 建议删除
     headers = HEADERS.copy()
     headers['Referer'] = quote('https://www.nea.gov.cn/search.htm?kw=%s' % keyword, safe=";/?:@&=+$,", encoding="utf-8")
     page = 1

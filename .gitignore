@@ -14,3 +14,5 @@ analyse_last_id.txt
 
 # download files
 **/downloads
+
+**/*.log
