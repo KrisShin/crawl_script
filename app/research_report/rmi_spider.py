@@ -20,7 +20,7 @@ from common.global_variant import close_db
 BASE_URL = "https://rmi.org.cn"
 START_URL = "https://rmi.org.cn/研究成果及洞察/"
 DOWNLOAD_DIR = Path("app/research_report/downloads")
-MAX_CONCURRENT_REQUESTS = 2  # 并发请求数
+MAX_CONCURRENT_REQUESTS = 1  # 并发请求数
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
 }
