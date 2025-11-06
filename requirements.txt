@@ -1,8 +1,7 @@
 aiofiles==25.1.0
 aiomysql==0.2.0
 aiosqlite==0.21.0
-aliyun-python-sdk-core==2.16.0
-aliyun-python-sdk-kms==2.16.5
+alibabacloud-oss-v2==1.2.0
 annotated-types==0.7.0
 anyio==4.9.0
 attrs==25.3.0
@@ -34,7 +33,6 @@ jmespath==0.10.0
 loguru==0.7.3
 lxml==5.4.0
 motor==3.7.0
-oss2==2.19.1
 packaging==25.0
 parsel==1.10.0
 pillow==12.0.0
