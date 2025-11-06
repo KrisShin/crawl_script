@@ -16,3 +16,5 @@ analyse_last_id.txt
 **/downloads
 
 **/*.log
+
+.vscode

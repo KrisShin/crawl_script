@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from loguru import logger  # <-- 新增
-import alibabacloud_oss_v2 as oss  # <-- 新增
+import oss2  # <-- 新增
 
 # 导入您的模型和配置加载器
 from app.research_report.model import ResearchReport
@@ -25,7 +25,7 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
 }
 
-oss_client: oss.Client = None
+oss_bucket: oss2.Bucket = None
 OSS_CONFIG = {}
 DELETE_LOCAL_AFTER_UPLOAD = False  # 默认值
 
@@ -35,29 +35,36 @@ logger.add("scraper.log", rotation="10 MB", encoding="utf-8")
 
 def init_oss_client():
     """
-    (同步) 初始化 OSS 客户端
+    (同步) 初始化 OSS 客户端，使用 oss2
     """
-    global oss_client, OSS_CONFIG, DELETE_LOCAL_AFTER_UPLOAD
-    logger.info("正在初始化 OSS 客户端...")
+    global oss_bucket, OSS_CONFIG, DELETE_LOCAL_AFTER_UPLOAD
+    logger.info("正在初始化 OSS 客户端 (使用 oss2)...")
     try:
         cfg = get_config()
-        OSS_CONFIG['alibaba_cloud_access_key_id'] = cfg.oss.alibaba_cloud_access_key_id
-        OSS_CONFIG['alibaba_cloud_access_key_secret'] = cfg.oss.alibaba_cloud_access_key_secret
+        OSS_CONFIG['access_key_id'] = cfg.oss.alibaba_cloud_access_key_id
+        OSS_CONFIG['access_key_secret'] = cfg.oss.alibaba_cloud_access_key_secret
         OSS_CONFIG['endpoint'] = cfg.oss.endpoint
         OSS_CONFIG['bucket_name'] = cfg.oss.bucket_name
 
-        # 从配置加载可选设置
-        DELETE_LOCAL_AFTER_UPLOAD = cfg.get('oss.delete_local_after_upload', False)
+        DELETE_LOCAL_AFTER_UPLOAD = cfg.get('delete_local_after_upload', False)
 
-        credentials = oss.credentials.StaticCredentialsProvider(
-            access_key_id=OSS_CONFIG['alibaba_cloud_access_key_id'], access_key_secret=OSS_CONFIG['alibaba_cloud_access_key_secret']
-        )
-        oss_cfg = oss.config.load_default()
-        oss_cfg.credentials_provider = credentials
-        oss_cfg.endpoint = OSS_CONFIG['endpoint']  # 必须设置 Endpoint
+        # 3. 按照 oss2 的方式初始化 Auth 和 Bucket
+        auth = oss2.Auth(OSS_CONFIG['access_key_id'], OSS_CONFIG['access_key_secret'])
 
-        oss_client = oss.Client(oss_cfg)
-        logger.info(f"OSS 客户端初始化成功。Bucket: {OSS_CONFIG['bucket_name']}, Endpoint: {OSS_CONFIG['endpoint']}")
+        # 增加连接池和超时设置
+        service = oss2.Service(auth, OSS_CONFIG['endpoint'], connect_timeout=30)
+
+        # Bucket 对象是线程安全的
+        oss_bucket = oss2.Bucket(auth, OSS_CONFIG['endpoint'], OSS_CONFIG['bucket_name'], connect_timeout=30)  # 增加超时
+
+        # 验证配置是否正确
+        try:
+            oss_bucket.get_bucket_info()
+            logger.info(f"OSS 客户端初始化成功。Bucket: {OSS_CONFIG['bucket_name']}, Endpoint: {OSS_CONFIG['endpoint']}")
+        except oss2.exceptions.OssError as e:
+            logger.error(f"OSS 认证或连接失败: {e}")
+            raise
+
     except Exception as e:
         logger.error(f"OSS 客户端初始化失败: {e}")
         raise
@@ -65,42 +72,45 @@ def init_oss_client():
 
 async def upload_to_oss(local_filepath: Path, oss_key: str) -> str | None:
     """
-    (异步-包装) 上传单个文件到 OSS 并返回公共 URL
-    oss_key: 在 bucket 中的完整路径, e.g. "报告标题/文件名.pdf"
+    (异步-包装) 使用 oss2.resumable_upload 上传文件并返回公共 URL
     """
-    global oss_client, OSS_CONFIG
-    if not oss_client:
-        logger.warning("OSS 客户端未初始化，跳过上传。")
+    global oss_bucket, OSS_CONFIG
+    if not oss_bucket:
+        logger.warning("OSS 客户端 (oss_bucket) 未初始化，跳过上传。")
         return None
 
     try:
-        logger.info(f"正在上传 {local_filepath} 到 OSS (Key: {oss_key})...")
+        logger.info(f"正在断点续传 {local_filepath} 到 OSS (Key: {oss_key})...")
 
-        # 1. (关键) 异步执行同步的 SDK 上传操作
+        # 1. (关键) 异步执行同步的 oss2.resumable_upload
         def _sync_upload():
-            uploader = oss_client.uploader()
-            # 您提供的备份脚本中使用了 uploader.upload_file
-            return uploader.upload_file(
-                oss.PutObjectRequest(
-                    bucket=OSS_CONFIG['bucket_name'],
-                    key=oss_key,
-                ),
-                filepath=str(local_filepath),
+            # 参照您的示例，使用 resumable_upload
+            # 它会自动处理分片、重试、断点续传
+            # multipart_threshold=10MB, part_size=5MB, 3 threads
+            result = oss2.resumable_upload(
+                oss_bucket,
+                oss_key,
+                str(local_filepath),
+                multipart_threshold=1024 * 1024 * 10,  # 超过 10MB 自动分片
+                part_size=1024 * 1024 * 5,  # 每个分片 5MB
+                num_threads=3,  # 3 个线程并发上传
             )
+            # 成功后返回 ETag
+            return result.etag
 
-        result = await asyncio.to_thread(_sync_upload)
+        etag = await asyncio.to_thread(_sync_upload)
 
         # 2. 检查上传结果
-        if result.status_code == 200:
-            logger.info(f"上传成功: {oss_key}, ETag: {result.etag}")
+        if etag:
+            logger.info(f"上传成功: {oss_key}, ETag: {etag}")
 
             # 3. (关键) 构建对外下载链接
-            public_url = f"https://{OSS_CONFIG['bucket_name']}.{OSS_CONFIG['endpoint']}/{oss_key}"
+            # 注意: URL 拼接需要处理 oss_key (特别是 Windows 上的 \ 替换为 /)
+            public_url = f"https://{OSS_CONFIG['bucket_name']}.{OSS_CONFIG['endpoint']}/{oss_key.replace(os.path.sep, '/')}"
 
             # 4. (可选) 删除本地文件
             if DELETE_LOCAL_AFTER_UPLOAD:
                 try:
-                    # 同样使用线程执行同步的 os.remove
                     await asyncio.to_thread(os.remove, local_filepath)
                     logger.info(f"已删除本地文件: {local_filepath}")
                 except Exception as e:
@@ -108,11 +118,15 @@ async def upload_to_oss(local_filepath: Path, oss_key: str) -> str | None:
 
             return public_url
         else:
-            logger.error(f"上传失败 {oss_key}: 状态码 {result.status_code}, Request ID: {result.request_id}")
+            # 理论上 _sync_upload 失败会抛出异常
+            logger.error(f"上传失败 {oss_key}: 未返回 ETag。")
             return None
 
+    except oss2.exceptions.OssError as e:
+        logger.error(f"OSS SDK 错误 {local_filepath}: {e}")
+        return None
     except Exception as e:
-        logger.error(f"OSS 上传任务异常 {local_filepath}: {e}")
+        logger.error(f"OSS 上传任务异常 {local_filepath}: {e}", exc_info=True)
         return None
 
 
@@ -217,7 +231,7 @@ async def parse_article_page(client: httpx.AsyncClient, url: str):
             try:
                 # 从本地路径反推出 OSS Key (相对于 DOWNLOAD_DIR)
                 # e.g. "报告标题/文件名.pdf"
-                oss_key = first_local_path.relative_to(DOWNLOAD_DIR).as_posix()
+                oss_key = Path('rmi') / first_local_path.relative_to(DOWNLOAD_DIR).as_posix()
 
                 # 开始上传
                 oss_url = await upload_to_oss(first_local_path, oss_key)
@@ -247,6 +261,7 @@ async def main():
 
     # 创建信号量来控制并发
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+    all_link = await ResearchReport.filter().values_list('article_url', flat=True)
 
     async with httpx.AsyncClient() as client:
         page_num = 1
@@ -270,6 +285,9 @@ async def main():
                 href = link.get('href')
                 if href:
                     article_url = urljoin(BASE_URL, href)
+                    # TODO:
+                    # if article_url in all_link:
+                    #     continue
 
                     # 使用信号量包装任务
                     async def task_wrapper(url):
