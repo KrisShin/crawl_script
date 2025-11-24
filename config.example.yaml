@@ -1,0 +1,53 @@
+database:
+  mysql:
+    host: "2"
+    port: 2
+    user: "2"
+    passwd: "2"
+    db_name: "2"
+
+  postgres:
+    host: "localhost"
+    port: 5432
+    db_name: "mydb"
+    user: "user"
+    passwd: "pass"
+
+  redis:
+    host: "localhost"
+    port: 6379
+    db_name: 0
+
+  mongodb:
+    host: "localhost"
+    port: 27017
+    db_name: "mydb"
+    user: "user"
+    passwd: "pass"
+
+secret: "secret"
+
+proxy:
+  username: "user"
+  password: "pasword"
+  tunnel: "tunnel"
+
+oss:
+  alibaba_cloud_access_key_id: "id"
+  alibaba_cloud_access_key_secret: "secret"
+  role_session_name: "name"
+  role_arn: "arn"
+  endpoint: "endpoint"
+  bucket_name: "bucket"
+  region: "region"
+
+hunyuan:
+  TENCENTCLOUD_SECRET_ID: "id"
+  TENCENTCLOUD_SECRET_KEY: "key"
+
+charging_alliance:
+  URL: "URL"
+  COOKIE: "COOKIE"
+  token: "token"
+  fakeid: "id"
+  fingerprint: "fingerprint"
