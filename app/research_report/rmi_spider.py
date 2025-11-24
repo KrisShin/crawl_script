@@ -290,9 +290,8 @@ async def main():
                 href = link.get('href')
                 if href:
                     article_url = urljoin(BASE_URL, href)
-                    # TODO:
-                    # if article_url in all_link:
-                    #     continue
+                    if article_url in all_link:
+                        continue
 
                     # 使用信号量包装任务
                     async def task_wrapper(url):
