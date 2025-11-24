@@ -23,10 +23,13 @@ def call_hunyuan(content: str, prompt: str):
 
         req = models.ChatCompletionsRequest()
         req.Model = "hunyuan-lite"
+        sys_msg = models.Message()
+        sys_msg.Role = "system"
+        sys_msg.Content = prompt
         msg = models.Message()
         msg.Role = "user"
-        msg.Content = f"""{prompt}{content}"""
-        req.Messages = [msg]
+        msg.Content = content
+        req.Messages = [sys_msg, msg]
 
         # hunyuan ChatCompletions 同时支持 stream 和非 stream 的情况
         req.Stream = False

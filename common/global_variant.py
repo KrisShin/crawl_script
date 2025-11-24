@@ -65,6 +65,7 @@ async def init_db(create_db=False) -> None:
                 "app.nea_news.model",
                 "app.anjuke.model",
                 "app.research_report.model",
+                "app.charging_alliance_news.model",
             ]
         },
         _create_db=create_db,
