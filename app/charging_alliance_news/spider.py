@@ -183,7 +183,13 @@ async def parse_page(title: str, article_url: str):
 
                 # 3. 保存数据
                 # 创建数据对象
-                defaults_data = {**resp_json, 'title': title, 'link': article_url, 'origin_text': text_content}
+                defaults_data = {
+                    **resp_json,
+                    'title': title,
+                    'link': article_url,
+                    'origin_text': text_content,
+                    'digest': text_content[:200] if text_content else "",
+                }
 
                 # get_or_create 返回的是一个元组 (对象, 是否创建)
                 news_data, created = await ChargingAllianceNews.get_or_create(
@@ -196,9 +202,6 @@ async def parse_page(title: str, article_url: str):
                     logger.success(f"新增数据: {news_data.year}年{news_data.month}月")
                 else:
                     logger.info(f"数据已存在: {news_data.year}年{news_data.month}月")
-
-                # 简单的摘要截取
-                news_data.digest = text_content[:200] if text_content else ""
 
                 # 填充 LLM 提取的数据
                 # 遍历 JSON 键值对并设置到模型中
