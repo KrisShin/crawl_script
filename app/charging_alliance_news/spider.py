@@ -101,7 +101,7 @@ LLM_PROMPT = """
     "year": 2025,
     "month": 10,
     "total_charging_facilities": 1864.5,
-    "public_charging_facilities": None,
+    "public_charging_facilities": 453.3,
     "private_charging_facilities": 1411.2,
     "public_rated_total_power": 2.03,
     "public_average_power": 44.69,
@@ -110,8 +110,8 @@ LLM_PROMPT = """
     "increase_charging_facilities": 582.7,
     "increase_public_facilities": 95.4,
     "increase_private_facilities": 487.3,
-    "year_NEV_sales": None,
-    "NEV_sales": None
+    "year_NEV_sales": null,
+    "NEV_sales": null
 }
 """
 
