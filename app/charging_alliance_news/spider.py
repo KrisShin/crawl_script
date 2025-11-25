@@ -183,7 +183,7 @@ async def parse_page(title: str, article_url: str):
 
                 # 3. 保存数据
                 # 创建数据对象
-                news_data = ChargingAllianceNews()
+                news_data = await ChargingAllianceNews.get_or_create(year=resp_json['year'], month=resp_json['month'], defaults=resp_json)
 
                 # 填充基础信息
                 news_data.title = title  # 你可能需要从列表页传递 title 或在页面解析 title
@@ -226,6 +226,8 @@ async def parse_page(title: str, article_url: str):
 async def parse_list(begin: int, client: httpx.AsyncClient):
     while True:
         logger.info(f'start crawling begin: {begin}')
+        params = URL_PARAMS
+        params['begin'] = begin
         response = await client.get(config.charging_alliance.URL, params=URL_PARAMS, headers=HEADERS, timeout=None)
         time.sleep(random.randint(1, 3))
         if response.status_code != 200:
@@ -260,7 +262,7 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
                     await parse_page(news['title'], news['link'])
 
         begin += 5
-        time.sleep(random.randint(10, 30))
+        time.sleep(random.randint(10, 30) / 1)
 
 
 async def main():
