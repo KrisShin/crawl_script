@@ -183,12 +183,20 @@ async def parse_page(title: str, article_url: str):
 
                 # 3. 保存数据
                 # 创建数据对象
-                news_data = await ChargingAllianceNews.get_or_create(year=resp_json['year'], month=resp_json['month'], defaults=resp_json)
+                defaults_data = {**resp_json, 'title': title, 'link': article_url, 'origin_text': text_content}
 
-                # 填充基础信息
-                news_data.title = title  # 你可能需要从列表页传递 title 或在页面解析 title
-                news_data.link = article_url
-                news_data.origin_text = text_content
+                # get_or_create 返回的是一个元组 (对象, 是否创建)
+                news_data, created = await ChargingAllianceNews.get_or_create(
+                    year=resp_json['year'],  # 查询条件 1
+                    month=resp_json['month'],  # 查询条件 2
+                    defaults=defaults_data,  # 如果没找到，创建新对象时使用的默认值
+                )
+
+                if created:
+                    logger.success(f"新增数据: {news_data.year}年{news_data.month}月")
+                else:
+                    logger.info(f"数据已存在: {news_data.year}年{news_data.month}月")
+
                 # 简单的摘要截取
                 news_data.digest = text_content[:200] if text_content else ""
 
