@@ -1,7 +1,6 @@
 import asyncio
 import click
 from loguru import logger
-from app.anjuke.main import fetch_anjuke
 from app.research_report.rmi_spider import main as run_rmi_crawl
 from app.charging_alliance_news.spider import main as charging_alliance_news
 from app.xueqiu.script.import_rebalancing import import_reb
@@ -30,7 +29,7 @@ def connect_db(db_type: str):
 @click.argument(
     "spider_name",
     type=click.Choice(
-        ["index", "zh_single", "zh", "zh_his", "user", "reb", "ana", "ctb", "ajk", "rmi", "news", "charging_alliance"],
+        ["index", "zh_single", "zh", "zh_his", "user", "reb", "ana", "ctb", "rmi", "news", "charging_alliance"],
         case_sensitive=False,
     ),
     required=False,
@@ -68,8 +67,6 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
         asyncio.run(analyze())
     elif spider_name == "ctb":
         asyncio.run(contrib(start_id))
-    elif spider_name == "ajk":
-        asyncio.run(fetch_anjuke(start_id))
     elif spider_name == "news":
         asyncio.run(crawl_nea_news())
     elif spider_name == "charging_alliance":
