@@ -239,7 +239,8 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
                 if news['title'].startswith("信息发布") and news['title'].endswith("全国电动汽车充换电基础设施运行情况"):
                     if await ChargingAllianceNews.filter(link=news['link']).exists():
                         logger.warning('之前数据已爬取, 结束爬虫')
-                        await parse_page(news['title'], news['link'])
+                        return
+                    await parse_page(news['title'], news['link'])
 
         begin += 5
         time.sleep(random.randint(10, 30) / 1)
