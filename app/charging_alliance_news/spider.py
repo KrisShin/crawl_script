@@ -1,6 +1,7 @@
 import asyncio
 import json
 import random
+import re
 import time
 from bs4 import BeautifulSoup
 import httpx
@@ -29,89 +30,61 @@ URL_PARAMS = {
 HEADERS = {
     'Cookie': config.charging_alliance.COOKIE,
 }
-BEGIN_FILE_URI = './app/charging_alliance/begin.log'
 
 LLM_PROMPT = """
-你是一个专业的数据提取助手。请阅读给定的【新闻文本】，提取电动汽车充换电基础设施的关键数据。
+你是一个专门用于解析“电动汽车充电基础设施运行情况”新闻的**JSON转换引擎**。
+你的唯一任务是将非结构化文本转换为**严格符合Schema**的JSON数据。
 
-### 核心提取逻辑
-请遍历全文，根据以下**字段定义**和**原文常见表述**来定位数据。
-**注意：**
-1. **区分总量与增量**：
-   - 字段名中未包含 `increase` 的，均指**截至统计时间的累计总量（保有量）**。
-   - 字段名包含 `increase` 的，指**统计周期内的增量（新增数量）**。
-2. **单位对齐**：请严格按照要求的单位（万个、亿千瓦等）提取纯数字。
-3. **模糊匹配**：不要死扣“年销量”这种字眼，只要是“本年度内的累计数据”（如1-10月销量）均视为年度数据。
+### 🚨 最高优先级禁令 (违反即失败)
+1.  **禁止Markdown**：输出**必须**以 `{` 开头，以 `}` 结尾。严禁包含 ```json 或 ``` 标记。
+2.  **禁止单位**：所有数值必须是**纯数字**（Float）。
+    - ❌ 错误：`"1281.8万"`, `"59.1亿"`, `"31.3%"`
+    - ✅ 正确：`1281.8`, `59.1`, `31.3`
+3.  **禁止多余字段**：**只允许**输出“待提取字段列表”中定义的 Key。严禁自作聪明添加 `top10_regions`, `region_data` 等字段。
+4.  **禁止增量混淆**：绝不要把“增量/增加”的数据填入“总量/保有量”字段。
 
-### 字段提取指南
-请提取以下字段（如果原文未提及，返回 null）：
+### 字段提取逻辑
 
-1. **基础信息**
-   - `year`: 统计年份 (例如 2025)
-   - `month`: 统计月份 (例如 10)
+**1. 时间定位 (Year/Month)**
+   - **Year**: 优先从标题提取。
+   - **Month**:
+     - 优先从标题提取（如“2025年4月...” -> 4）。
+     - **特殊情况**：如果标题只有年份（如“2024年全国...”），请阅读正文 **“1 公共充电基础设施运行情况”** 的第一句话。
+     - *示例*：“2024年12月比...” -> 则月份为 12。
 
-2. **保有量/累计总量 (Total/Cumulative)**
-   - `total_charging_facilities`: 充电基础设施总数/累计数量。
-     - *原文线索*：“充电基础设施（枪）总数”、“全国充电桩累计数量”
-     - *目标单位*：万个
-   - `public_charging_facilities`: 公共充电设施总数。
-     - *原文线索*：“公共充电设施（枪）...万个”、“公共充电桩累计数量”
-     - *注意*：**不要**提取成“增量”，找“截至...”开头的数据。
-     - *目标单位*：万个
-   - `private_charging_facilities`: 私人/随车配建充电设施总数。
-     - *原文线索*：“私人充电设施（枪）...万个”、“随车配建充电设施”
-     - *目标单位*：万个
-   - `public_rated_total_power`: 公共充电桩额定总功率。
-     - *原文线索*：“公共充电桩额定总功率”、“总功率达到”
-     - *目标单位*：亿千瓦
-   - `public_average_power`: 公共充电桩平均功率。
-     - *原文线索*：“平均功率约为”
-     - *目标单位*：千瓦
-   - `private_declared_capacity`: 私人充电设施报装用电容量。
-     - *原文线索*：“报装用电容量”
-     - *目标单位*：亿千伏安
-   - `total_charging_capacity`: 全国充电总电量。
-     - *原文线索*：“全国充电总电量”、“充电电量”
-     - *目标单位*：亿度
+**2. 关键数值提取 (核心规则)**
+   - **`public_charging_facilities` (公共保有量)**
+     - 目标：截至当前时间的**累计总数**。
+     - 关键词锚点：“截至...公共充电桩...万台/万个”。
+     - *排除*：不要提取“增加”、“新增”的数字。
+   
+   - **`private_charging_facilities` (私人保有量)**
+     - 目标：截至当前时间的**累计总数**。
+     - *陷阱警示*：很多文章只提到“随车配建私人充电桩**增量**为...”。如果你只找到了“增量”，**请将保有量字段填 null**，不要把增量填进去！
 
-3. **增量/变化情况 (Increase/Growth)**
-   - `increase_charging_facilities`: 充电基础设施增量。
-     - *原文线索*：“充电基础设施增量”、“同比增加...”
-     - *目标单位*：万个
-   - `increase_public_facilities`: 公共充电设施增量。
-     - *原文线索*：“公共充电设施增量”
-     - *目标单位*：万个
-   - `increase_private_facilities`: 私人充电设施增量。
-     - *原文线索*：“私人充电设施增量”、“随车配建增量”
-     - *目标单位*：万个
+   - **`year_NEV_sales` (新能源汽车年度累计销量)**
+     - 目标：本年度（1-X月）的**累计销量**。
+     - 关键词锚点：文章末尾“充电基础设施与电动汽车对比情况”章节。
+     - 匹配逻辑：找 “1-X月...新能源汽车销量...万辆”。即便原文说是“1-5月”，也提取该数字作为年度累计值。
 
-4. **车辆销售数据 (Sales)**
-   - `year_NEV_sales`: 新能源汽车**本年度累计**销量。
-     - *原文线索*：“新能源汽车国内销量”、“1-X月新能源汽车销量”
-     - *说明*：即使原文说的是“1-10月销量”，也属于本字段（年度累计），请提取该数字。
-     - *目标单位*：万辆
-   - `NEV_sales`: 新能源汽车**当月**销量。
-     - *原文线索*：“本月新能源汽车销量”、“10月新能源汽车销量”
-     - *说明*：必须明确是**单月**数据。如果是累计数据请勿填入此字段。
-     - *目标单位*：万辆
+**3. 增量字段 (Increase)**
+   - 仅提取明确带有“增加”、“新增”、“增量”描述的数字。
 
-### 输出格式 (JSON Only)
-请直接返回 JSON 字符串，格式如下：
+### 待提取字段列表 (JSON Schema)
+请严格仅返回包含以下 Key 的 JSON 对象（未找到填 null）：
+
 {
-    "year": 2025,
-    "month": 10,
-    "total_charging_facilities": 1864.5,
-    "public_charging_facilities": 453.3,
-    "private_charging_facilities": 1411.2,
-    "public_rated_total_power": 2.03,
-    "public_average_power": 44.69,
-    "private_declared_capacity": 1.24,
-    "total_charging_capacity": 91.1,
-    "increase_charging_facilities": 582.7,
-    "increase_public_facilities": 95.4,
-    "increase_private_facilities": 487.3,
-    "year_NEV_sales": null,
-    "NEV_sales": null
+    "total_charging_facilities": null,    // (float) 基础设施累计数量 (万台/万个)
+    "public_charging_facilities": null,   // (float) 公共桩累计数量 (万台/万个)
+    "private_charging_facilities": null,  // (float) 私人桩累计数量 (万台/万个) [注意：找不到累计值填null，别填增量]
+    "public_rated_total_power": null,     // (float) 公共桩额定总功率 (亿千瓦)
+    "public_average_power": null,         // (float) 公共桩平均功率 (千瓦)
+    "private_declared_capacity": null,    // (float) 私人桩报装容量 (亿千伏安)
+    "total_charging_capacity": null,      // (float) 全国充电总电量 (亿度/亿kWh)
+    "increase_charging_facilities": null, // (float) [增量] 基础设施增量
+    "increase_public_facilities": null,   // (float) [增量] 公共桩增量
+    "increase_private_facilities": null,  // (float) [增量] 私人桩增量
+    "year_NEV_sales": null                // (float) 本年度/1-X月累计销量 (万辆)
 }
 """
 
@@ -252,25 +225,21 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
             continue
         elif data['base_resp']['ret'] == 200003:
             # 没有Cookie或者Cookie过期, 终止尝试
-            with open(BEGIN_FILE_URI, 'w') as f:
-                f.write(f'{begin}')
             raise Exception('Cookie过期')
         elif data['base_resp']['ret'] != 0:
             # 未知错误, 终止尝试
-            with open(BEGIN_FILE_URI, 'w') as f:
-                f.write(f'{begin}')
             raise Exception('Cookie过期')
         publish_page = json.loads(data['publish_page'])
         if not publish_page:
-            with open(BEGIN_FILE_URI, 'w') as f:
-                f.write(f'{begin}')
             logger.info(f'爬取已完成, 共{begin}条数据')
             return
         for pl in publish_page['publish_list']:
             pi = json.loads(pl['publish_info'])
             for news in pi['appmsgex']:
                 if news['title'].startswith("信息发布") and news['title'].endswith("全国电动汽车充换电基础设施运行情况"):
-                    await parse_page(news['title'], news['link'])
+                    if await ChargingAllianceNews.filter(year=news['year'], month=news['month']).exists():
+                        logger.warning('之前数据已爬取, 结束爬虫')
+                        await parse_page(news['title'], news['link'])
 
         begin += 5
         time.sleep(random.randint(10, 30) / 1)
@@ -278,14 +247,45 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
 
 async def main():
     begin = 0
-    try:
-        with open(BEGIN_FILE_URI, 'r') as f:
-            begin = int(f.read().strip())
-    except:
-        pass
     logger.info(f'begin: {begin}')
     client = httpx.AsyncClient()
     await parse_list(begin, client)
+
+
+async def repair():
+    all_news = await ChargingAllianceNews.all().order_by('-year', '-month')
+    logger.info(f'repair data, total {len(all_news)}')
+    expected_fields = [
+        "total_charging_facilities",
+        "public_charging_facilities",
+        "private_charging_facilities",
+        "public_rated_total_power",
+        "public_average_power",
+        "private_declared_capacity",
+        "total_charging_capacity",
+        "increase_charging_facilities",
+        "increase_public_facilities",
+        "increase_private_facilities",
+        "year_NEV_sales",
+    ]
+    for index, news in enumerate(all_news):
+        # try:
+        #     parse_json = call_hunyuan(re.sub(r'\s+', '', news.origin_text), LLM_PROMPT, expected_fields)
+        # except:
+        #     continue
+        # logger.info(f'parse json: {parse_json}')
+        last_news = all_news[index + 1] if index < len(all_news) - 1 else None
+        logger.info(
+            f'reparing: {news.year}-{news.month}, last: {last_news.year}-{last_news.month} news_year_NEV_sales: {news.year_NEV_sales}, last_news_year_NEV_sales: {last_news.year_NEV_sales}'
+        )
+        if last_news and last_news.year_NEV_sales and news.year_NEV_sales:
+            news.NEV_sales = news.year_NEV_sales - last_news.year_NEV_sales
+        # for key, value in parse_json.items():
+        #     org_value = getattr(news, key, None)
+        #     if value is not None and value != org_value and hasattr(news, key):
+        #         # 如果原数据已经有值，你可以选择覆盖或者保留。这里选择【强制覆盖】以修复错误数据
+        #         setattr(news, key, value)
+        await news.save()
 
 
 if __name__ == '__main__':

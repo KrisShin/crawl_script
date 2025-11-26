@@ -3,7 +3,7 @@ import click
 from loguru import logger
 from app.anjuke.main import fetch_anjuke
 from app.research_report.rmi_spider import main as run_rmi_crawl
-from app.charging_alliance_news.spider import main as charging_alliance_news
+from app.charging_alliance_news.spider import repair as charging_alliance_news
 from app.xueqiu.script.import_rebalancing import import_reb
 from common.global_variant import init_db
 from app.xueqiu.main import (
