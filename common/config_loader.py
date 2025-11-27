@@ -78,6 +78,13 @@ class ConfigLoader(object):
             raise AttributeError("config.yaml 中缺少 'charging_alliance' 配置节")
         return self._config.charging_alliance
 
+    @property
+    def email(self):
+        """访问 OSS 配置的快捷方式"""
+        if not hasattr(self._config, 'yeah_mail'):
+            raise AttributeError("config.yaml 中缺少 'yeah_mail' 配置节")
+        return self._config.yeah_mail
+
     def get(self, key_path: str, default: Any = None) -> Optional[Any]:
         """
         通过点分路径获取配置值

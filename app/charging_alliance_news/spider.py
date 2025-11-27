@@ -1,13 +1,13 @@
 import asyncio
 import json
 import random
-import re
 import time
 from bs4 import BeautifulSoup
 import httpx
 from loguru import logger
 from app.charging_alliance_news.model import ChargingAllianceNews
 from app.common.hunyuan_api import call_hunyuan
+from common.email_util import send_email
 from common.global_variant import config
 
 URL_PARAMS = {
@@ -30,6 +30,8 @@ URL_PARAMS = {
 HEADERS = {
     'Cookie': config.charging_alliance.COOKIE,
 }
+
+logs = []
 
 LLM_PROMPT = """
 你是一个专门用于解析“电动汽车充电基础设施运行情况”新闻的**JSON转换引擎**。
@@ -102,6 +104,7 @@ def extract_article_text(html_content):
 
         if not content_div:
             logger.warning("未找到 id='js_content' 的正文容器")
+            logs.append("未找到 id='js_content' 的正文容器")
             return ""
 
         # 2. 移除无用的标签 (可选)
@@ -124,6 +127,7 @@ def extract_article_text(html_content):
 
     except Exception as e:
         logger.error(f"解析 HTML 出错: {e}")
+        logs.append(f"解析 HTML 出错: {e}")
         return ""
 
 
@@ -133,6 +137,8 @@ async def parse_page(title: str, article_url: str):
     """
     try:
         logger.info(f"正在抓取文章: {article_url}")
+        logs.append(f"正在抓取文章: {article_url}")
+
         response = httpx.get(
             article_url,
             headers={
@@ -146,10 +152,12 @@ async def parse_page(title: str, article_url: str):
             text_content = extract_article_text(response.text)
             if not text_content:
                 logger.warning("未能提取到正文内容")
+                logs.append("未能提取到正文内容")
                 return
 
             # 2. 调用混元大模型提取数据
             logger.info("正在调用混元模型提取数据...")
+            logs.append("正在调用混元模型提取数据...")
             try:
                 # 调用 LLM
                 resp_json = call_hunyuan(text_content, LLM_PROMPT)
@@ -173,8 +181,10 @@ async def parse_page(title: str, article_url: str):
 
                 if created:
                     logger.success(f"新增数据: {news_data.year}年{news_data.month}月")
+                    logs.append(f"新增数据: {news_data.year}年{news_data.month}月")
                 else:
                     logger.info(f"数据已存在: {news_data.year}年{news_data.month}月")
+                    logs.append(f"数据已存在: {news_data.year}年{news_data.month}月")
 
                 # 填充 LLM 提取的数据
                 # 遍历 JSON 键值对并设置到模型中
@@ -184,6 +194,7 @@ async def parse_page(title: str, article_url: str):
                         setattr(news_data, key, value)
                     else:
                         logger.debug(f"忽略模型中不存在的字段: {key}")
+                        logs.append(f"忽略模型中不存在的字段: {key}")
 
                 # 特殊逻辑：计算 NEV_sales (当月销量)
                 # 如果 LLM 没有提取到当月销量（因为文中可能只有累计），
@@ -196,20 +207,25 @@ async def parse_page(title: str, article_url: str):
                 # 保存到数据库
                 await news_data.save()
                 logger.success(f"数据提取并保存成功! 年份: {news_data.year}, 月份: {news_data.month}")
+                logs.append(f"数据提取并保存成功! 年份: {news_data.year}, 月份: {news_data.month}")
 
             except Exception as e:
                 logger.error(f"大模型提取或保存数据失败: {e}")
+                logs.append(f"大模型提取或保存数据失败: {e}")
 
         else:
             logger.error(f"请求文章失败, 状态码: {response.status_code}")
+            logs.append(f"请求文章失败, 状态码: {response.status_code}")
 
     except Exception as e:
         logger.error(f"抓取文章发生异常: {e}")
+        logs.append(f"抓取文章发生异常: {e}")
 
 
 async def parse_list(begin: int, client: httpx.AsyncClient):
     while True:
         logger.info(f'start crawling begin: {begin}')
+        logs.append(f'start crawling begin: {begin}')
         params = URL_PARAMS
         params['begin'] = begin
         response = await client.get(config.charging_alliance.URL, params=URL_PARAMS, headers=HEADERS, timeout=None)
@@ -221,6 +237,7 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
         if data['base_resp']['ret'] == 200013:
             # 流量控制, 停止一小时后尝试
             logger.warning('流量控制, 停止一小时后尝试')
+            logs.append('流量控制, 停止一小时后尝试')
             time.sleep(3600)
             continue
         elif data['base_resp']['ret'] == 200003:
@@ -232,6 +249,8 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
         publish_page = json.loads(data['publish_page'])
         if not publish_page:
             logger.info(f'爬取已完成, 共{begin}条数据')
+            logs.append(f'爬取已完成, 共{begin}条数据')
+
             return
         for pl in publish_page['publish_list']:
             pi = json.loads(pl['publish_info'])
@@ -239,6 +258,8 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
                 if news['title'].startswith("信息发布") and news['title'].endswith("全国电动汽车充换电基础设施运行情况"):
                     if await ChargingAllianceNews.filter(link=news['link']).exists():
                         logger.warning('之前数据已爬取, 结束爬虫')
+                        logs.append('之前数据已爬取, 结束爬虫')
+                        await send_email('krisshin@88.com', '充电联盟爬虫结束', '\n'.join(logs), False)
                         return
                     await parse_page(news['title'], news['link'])
 
@@ -249,6 +270,7 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
 async def main():
     begin = 0
     logger.info(f'begin: {begin}')
+    logs.append(f'begin: {begin}')
     client = httpx.AsyncClient()
     await parse_list(begin, client)
 
@@ -256,6 +278,7 @@ async def main():
 async def repair():
     all_news = await ChargingAllianceNews.all().order_by('-year', '-month')
     logger.info(f'repair data, total {len(all_news)}')
+    logs.append(f'repair data, total {len(all_news)}')
     expected_fields = [
         "total_charging_facilities",
         "public_charging_facilities",
@@ -277,6 +300,9 @@ async def repair():
         # logger.info(f'parse json: {parse_json}')
         last_news = all_news[index + 1] if index < len(all_news) - 1 else None
         logger.info(
+            f'reparing: {news.year}-{news.month}, last: {last_news.year}-{last_news.month} news_year_NEV_sales: {news.year_NEV_sales}, last_news_year_NEV_sales: {last_news.year_NEV_sales}'
+        )
+        logs.append(
             f'reparing: {news.year}-{news.month}, last: {last_news.year}-{last_news.month} news_year_NEV_sales: {news.year_NEV_sales}, last_news_year_NEV_sales: {last_news.year_NEV_sales}'
         )
         if last_news and last_news.year_NEV_sales and news.year_NEV_sales:

@@ -9,6 +9,7 @@ from scrapy import Selector
 
 from app.common.hunyuan_api import call_hunyuan
 from app.nea_news.model import EVChargingInfrastructureData
+from common.email_util import send_email
 
 URL = 'https://www.nea.gov.cn/was5/web/conwebsite/getNewsFromAllData?callback=jsonpCallback&pageNo=%d&pageSize=10&siteId=11200&keyword=%s&sort=1&isInclude=1&neac=&_=%s'
 KEYWORD = '国家能源局发布%d年%d月全国电动汽车充电设施数据'
@@ -45,6 +46,8 @@ LLM_PROMPT = """
 
 """
 
+logs = []
+
 
 async def parse_news(news: dict, data: EVChargingInfrastructureData):
     url = news['originUrl'][0]
@@ -63,6 +66,7 @@ async def parse_news(news: dict, data: EVChargingInfrastructureData):
         setattr(data, key, value)
     await data.save()
     logger.success(f'获取 {data.title} 完成✅!!!')
+    logs.append(f'获取 {data.title} 完成✅!!!')
 
 
 async def parse_search() -> Tuple[Dict, EVChargingInfrastructureData]:
@@ -94,6 +98,7 @@ async def main():
     news, data = await parse_search()
     if news:
         await parse_news(news, data)
+    await send_email('krisshin@88.com', '能源局数据爬虫结束', '\n'.join(logs), False)
 
 
 if __name__ == '__main__':
