@@ -31,7 +31,7 @@ EMAIL_HTML_TEMPLATE = """
     <table border='0' cellpadding='0' cellspacing='0' width="100%">
         <tr>
             <td style='padding: 40px 10px;'>
-                <table align='center' border='0' cellpadding='0' cellspacing='0' width='600' style='max-width: 600px; border-collapse: collapse;'>
+                <table align='center' border='0' cellpadding='0' cellspacing='0' width='90%' style='max-width: 90%; border-collapse: collapse;'>
                     <tr>
                         <td align='center' style='padding-bottom: 20px;'>
                             <h2 style='color: #00ffff; font-weight: normal; letter-spacing: 2px; margin: 0;'>尊敬的: {email}</h2>

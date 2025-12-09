@@ -74,6 +74,9 @@ async def parse_search() -> Tuple[Dict, EVChargingInfrastructureData]:
     now = now.replace(day=1) - timedelta(days=1)
     keyword = KEYWORD % (now.year, now.month)
     # keyword = KEYWORD % (2025, 9)  # TODO: 测试用, 建议删除
+    msg = f'启动爬虫, 开始爬取能源局新闻: {keyword}'
+    logger.info(msg)
+    logs.append(msg)
     headers = HEADERS.copy()
     headers['Referer'] = quote('https://www.nea.gov.cn/search.htm?kw=%s' % keyword, safe=";/?:@&=+$,", encoding="utf-8")
     page = 1
@@ -84,10 +87,23 @@ async def parse_search() -> Tuple[Dict, EVChargingInfrastructureData]:
         encoded_url = quote(url, safe=";/?:@&=+$,", encoding="utf-8")
         resp = httpx.get(encoded_url, headers=headers, timeout=None)
         if resp.status_code != 200 or not resp.text or not resp.text.startswith('jsonpCallback'):
+            msg = f'爬取新闻失败, page: {page} {resp.status_code}-{resp.text}'
+            logger.info(msg)
+            logs.append(msg)
             raise Exception('请求失败', resp.status_code, resp.text)
         json_data = json.loads(resp.text[14:-2])
-        target_news = next(filter(lambda news: news['linkTitle'] == keyword, json_data['content']['result']), None)
+        news_result = json_data['content']['result']
+        msg = f'爬取新闻, page: {page} keyword: {keyword}, 新闻数: {len(news_result)}'
+        logger.info(msg)
+        logs.append(msg)
+        if not news_result or page>2:
+            logger.info('未爬取到数据, 结束爬虫')
+            logs.append('未爬取到数据, 结束爬虫')
+            return None, None
+        target_news = next(filter(lambda news: news['linkTitle'] == keyword, news_result), None)
         if target_news:
+            logger.info(f'已爬取到, {keyword}')
+            logs.append(f'已爬取到, {keyword}')
             break
         page += 1
         time.sleep(3)
