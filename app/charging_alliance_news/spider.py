@@ -2,6 +2,7 @@ import asyncio
 import json
 import random
 import time
+import re
 from bs4 import BeautifulSoup
 import httpx
 from loguru import logger
@@ -172,10 +173,16 @@ async def parse_page(title: str, article_url: str):
                     'digest': text_content[:200] if text_content else "",
                 }
 
+                pattern = r"(\d{4})年(?:(\d{1,2})月)?"
+    
+                match = re.search(pattern, defaults_data.get('title'))
+                year = match.group(1)
+                month = match.group(2) or 12
+
                 # get_or_create 返回的是一个元组 (对象, 是否创建)
                 news_data, created = await ChargingAllianceNews.get_or_create(
-                    year=resp_json['year'],  # 查询条件 1
-                    month=resp_json['month'],  # 查询条件 2
+                    year=year,  # 查询条件 1
+                    month=month,  # 查询条件 2
                     defaults=defaults_data,  # 如果没找到，创建新对象时使用的默认值
                 )
 
