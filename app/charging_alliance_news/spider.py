@@ -249,10 +249,14 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
             continue
         elif data['base_resp']['ret'] == 200003:
             # 没有Cookie或者Cookie过期, 终止尝试
-            raise Exception('Cookie过期')
+            logger.warning('Cookie过期')
+            logs.append('Cookie过期')
+            return
         elif data['base_resp']['ret'] != 0:
             # 未知错误, 终止尝试
-            raise Exception('Cookie过期')
+            logger.warning('未知错误, 终止尝试')
+            logs.append('未知错误, 终止尝试')
+            return
         publish_page = json.loads(data['publish_page'])
         if not publish_page:
             logger.info(f'爬取已完成, 共{begin}条数据')
@@ -266,7 +270,6 @@ async def parse_list(begin: int, client: httpx.AsyncClient):
                     if await ChargingAllianceNews.filter(link=news['link']).exists():
                         logger.warning('之前数据已爬取, 结束爬虫')
                         logs.append('之前数据已爬取, 结束爬虫')
-                        await send_email('krisshin@88.com', '充电联盟爬虫结束', '\n'.join(logs), False)
                         return
                     await parse_page(news['title'], news['link'])
 
@@ -280,6 +283,7 @@ async def main():
     logs.append(f'begin: {begin}')
     client = httpx.AsyncClient()
     await parse_list(begin, client)
+    await send_email('krisshin@88.com', '充电联盟爬虫结束', '\n'.join(logs), False)
 
 
 async def repair():
