@@ -51,3 +51,12 @@ charging_alliance:
   token: "token"
   fakeid: "id"
   fingerprint: "fingerprint"
+
+yeah_mail:
+  secret: "secret"
+  server: "smtp.server"
+  username: "user"
+  from: "tset@234.234"
+  from_name: "123"
+  port: 465
+
