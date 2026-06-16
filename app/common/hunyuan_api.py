@@ -119,18 +119,15 @@ def call_hunyuan(content: str, prompt: str, expected_fields: list = None):
             res = _clean_and_parse_json(full_content, expected_fields)
             if res:
                 return res
-            from traceback import print_exc
-
-            print_exc()
-            return False, False, False
+            logger.error(f"JSON 解析失败, full_content: {full_content[:200]}")
+            return {}
 
     except TencentCloudSDKException as err:
-        print(err)
+        logger.error(f"腾讯云 SDK 异常: {err}")
+        return {}
     except Exception as err:
-        from traceback import print_exc
-
-        print_exc()
-        print(err)
+        logger.error(f"混元 API 调用异常: {err}", exc_info=True)
+        return {}
 
 
 if __name__ == '__main__':

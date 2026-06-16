@@ -1,6 +1,6 @@
 from datetime import datetime
+import asyncio
 import json
-import time
 import random
 import httpx
 from loguru import logger
@@ -33,10 +33,9 @@ class XueqiuZHRebalancingSpider(BaseSpider):
         super().__init__(client=client, model=XueqiuRebalancing)
         self.base_url = 'https://xueqiu.com/cubes/rebalancing/history.json?cube_symbol=%s&count=50&page=%d&md5__1038=%s'
         self.cookie = list(user_cookies.values())[index % 4]
-        # self.symbol_list = symbol_all_list if index != 3 else symbol_new_list
         self.symbol_list = symbol_new_list
 
-    def crawl(self, zh_index: int, max_index: int):
+    async def crawl(self, zh_index: int, max_index: int):
         rebalancing_list = []
         while zh_index < max_index:
             page = 1
@@ -47,10 +46,10 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                     break
                 index_url = self.base_url % (self.symbol_list[zh_index], page, random.choice(md5_list))
                 try:
-                    resp = self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': self.cookie}, timeout=30)
+                    resp = await self.client.get(index_url, headers={'User-Agent': ua.random, 'cookie': self.cookie}, timeout=30)
                     if resp.status_code != 200:
                         logger.error(f'获取组合调仓数据失败: index:{zh_index}, zh_id:{self.symbol_list[zh_index]} code: {resp.status_code}, {resp.text}')
-                        time.sleep(120)
+                        await asyncio.sleep(120)
                     data = resp.json()
                     if page == 1:
                         max_page = data['maxPage']
@@ -61,40 +60,33 @@ class XueqiuZHRebalancingSpider(BaseSpider):
                             for item in data['list']
                         ]
                     )
-                    # with open(f'xueqiu_zh_id', 'a') as f:
-                    #     f.write(f'ZH{zh_id}\n')
                     logger.success(f'获取组合调仓数据成功: index: {zh_index} ZHID:{self.symbol_list[zh_index]}, crawled:{len(data["list"])}')
                     page += 1
                 except Exception as e:
                     logger.error(f'请求失败: {e}')
                     continue
-                time.sleep(1 + random.random() * 3)
+                await asyncio.sleep(1 + random.random() * 3)
             zh_index += 1
-        # await self.save(history_list)
-        # logger.success(f'获取组合历史数据完成')
         if rebalancing_list:
             try:
                 mongo_client = MongoClient(mongo_uri)
                 db = mongo_client[mongo_config.db_name]
                 collection = db["zh_rebalancing"]
-                # 构建批量操作列表
                 operations = [
                     UpdateOne(
-                        {"id": item["id"]},  # 查询条件，确保 id 唯一
-                        {"$set": item},  # 更新内容
-                        upsert=True,  # 如果不存在则插入
+                        {"id": item["id"]},
+                        {"$set": item},
+                        upsert=True,
                     )
                     for item in rebalancing_list
                 ]
-                # 批量执行操作
                 if operations:
                     result = collection.bulk_write(operations, ordered=False)
                     logger.success(f"成功保存 {result.upserted_count}, 更新{ result.modified_count} 条数据到 MongoDB max_id: {max_index}")
                 mongo_client.close()
             except Exception as e:
-                from traceback import print_exc
-
-                print_exc()
+                import traceback
+                traceback.print_exc()
                 logger.error(f"保存到 MongoDB 失败: {e} max_id: {max_index}")
 
 
@@ -103,9 +95,7 @@ if __name__ == '__main__':
 
     async def run():
         async with httpx.AsyncClient(proxies=proxies) as client:
-            spider = XueqiuZHRebalancingSpider(client)
-            await spider.crawl(s_id=100389)
-
-    import asyncio
+            spider = XueqiuZHRebalancingSpider(client, 0)
+            await spider.crawl(zh_index=0, max_index=10)
 
     asyncio.run(run())

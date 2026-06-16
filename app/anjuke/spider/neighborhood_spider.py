@@ -1,4 +1,4 @@
-import time
+import asyncio
 import random
 import httpx
 from loguru import logger
@@ -23,7 +23,7 @@ class AnjukeSHCommunitySpider(BaseSpider):
         index = 1
         while index <= total:
             url_list = self.parse_list(self.page)
-            time.sleep(30 + random.randint(5, 15))
+            await asyncio.sleep(30 + random.randint(5, 15))
 
             for url in url_list:
                 while True:
@@ -55,18 +55,18 @@ class AnjukeSHCommunitySpider(BaseSpider):
                             }
                         )
                         await AnjukeSHCommunity.update_or_create(id=community_info["id"], defaults=community_info)
-                        time.sleep(30 + random.randint(5, 15))
+                        await asyncio.sleep(30 + random.randint(5, 15))
                         break
                     except Exception as err:
                         from traceback import print_exc
 
                         print_exc()
-                        time.sleep(30 + random.randint(5, 15))
+                        await asyncio.sleep(30 + random.randint(5, 15))
                 logger.info(f"第 {index}/{total} 条信息爬取完毕")
                 index += 1
             logger.info(f"第 {self.page} 页数据爬取完成")
             self.page += 1
-            time.sleep(50 + random.randint(5, 15))
+            await asyncio.sleep(50 + random.randint(5, 15))
 
     def parse_list(self, page: int) -> list:
         """解析列表页"""

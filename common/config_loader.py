@@ -26,7 +26,7 @@ class ConfigLoader(object):
             raise FileNotFoundError("config.yaml not found in default locations")
 
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 raw_config = yaml.safe_load(f)
                 self._config = self._dict_to_object(raw_config)
         except yaml.YAMLError as e:

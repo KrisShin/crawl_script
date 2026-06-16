@@ -200,21 +200,17 @@ async def crawl_user_async(u_id: int = 0, max_id: int = 500450, coroutine: int =
 
 
 async def crawl_rebalancing(zh_index: int = 0, max_index: int = 1265067, coroutine: int = 5):
-    # zh_id = 105040
-    # max_id = 150000  # 限制最大 ID
-    # max_id = 25800000  # 真实最大 ID
     if not max_index or max_index < zh_index:
         logger.error("max_id 必须大于 u_id")
         return
     step = 10  # 每个协程爬取的 ID 范围
 
-    with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         while zh_index < max_index:
             spider = XueqiuZHRebalancingSpider(client, coroutine)
-            spider.crawl(zh_index=zh_index, max_index=min(zh_index + step, max_index))
+            await spider.crawl(zh_index=zh_index, max_index=min(zh_index + step, max_index))
             zh_index += step
 
-    # 爬虫完成时记录日志
     print(f"爬虫任务完成，已爬取到 max_index={max_index}")
 
 

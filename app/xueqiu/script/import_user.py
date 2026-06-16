@@ -14,21 +14,21 @@ async def import_user():
     await init_db(create_db=False)
 
     all_user_id = await XueqiuUser.all().values_list('id', flat=True)
+    all_user_id_set = set(all_user_id)
+
+    batch = list(collection.find({'crawl_time': {'$gte': datetime.strptime("2025-04-25T15:00:00", "%Y-%m-%dT%H:%M:%S")}}))
+
     users = []
+    for item in batch:
+        if int(item['id']) not in all_user_id_set:
+            item.pop('crawl_time')
+            users.append(XueqiuUser(**item))
 
-    while True:
-        users = []
-        batch = collection.find({'crawl_time': {'$gte': datetime.strptime("2025-04-25T15:00:00", "%Y-%m-%dT%H:%M:%S")}})
-
-        if not batch:
-            break
-
-        for item in batch:
-            if int(item['id']) not in all_user_id:
-                item.pop('crawl_time')
-                users.append(XueqiuUser(**item))
+    if users:
         await XueqiuUser.bulk_create(users, ignore_conflicts=True)
         print(f"已导入{len(users)}条数据")
+    else:
+        print("没有新数据需要导入")
 
 
 async def check_hisory():

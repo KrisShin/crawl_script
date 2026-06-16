@@ -1,90 +1,112 @@
 import asyncio
+import importlib
+import inspect
+
 import click
 from loguru import logger
-from app.research_report.rmi_spider import main as run_rmi_crawl
-from app.charging_alliance_news.spider import main as charging_alliance_news
-from app.xueqiu.script.import_rebalancing import import_reb
-from common.email_util import send_email
+
 from common.global_variant import init_db
-from app.xueqiu.main import (
-    analyze,
-    contrib,
-    crawl_index,
-    crawl_rebalancing,
-    crawl_zh,
-    crawl_zh_async,
-    crawl_zh_history_async,
-    crawl_user_async,
+from common.spider_registry import (
+    get_spider,
+    get_spider_names,
+    register_spider,
 )
-from app.nea_news.spider import main as crawl_nea_news
+
+# ---------------------------------------------------------------------------
+# Import spider modules so their @register_spider decorators fire.
+# ---------------------------------------------------------------------------
+_ACTIVE_SPIDER_MODULES = [
+    "app.charging_alliance_news.spider",
+    "app.nea_news.spider",
+    "app.research_report.rmi_spider",
+]
+
+for _mod in _ACTIVE_SPIDER_MODULES:
+    try:
+        importlib.import_module(_mod)
+    except Exception as exc:
+        logger.warning(f"Skipped spider module {_mod}: {exc}")
+
+# ---------------------------------------------------------------------------
+# Register xueqiu spiders — wrapper adapters stay here so xueqiu code is untouched.
+# ---------------------------------------------------------------------------
+try:
+    from app.xueqiu.main import (
+        analyze,
+        contrib,
+        crawl_index,
+        crawl_rebalancing,
+        crawl_zh,
+        crawl_zh_async,
+        crawl_zh_history_async,
+        crawl_user_async,
+    )
+
+    register_spider("index", help="Crawl xueqiu stock index")(crawl_index)
+    register_spider("zh_single", help="Crawl xueqiu ZH (single-threaded)")(crawl_zh)
+    register_spider("ana", help="Analyze ZH and drawdown")(analyze)
+
+    @register_spider("zh", help="Crawl xueqiu ZH index (async)")
+    async def _zh(start_id: int = 100389, end_id: int = 25800000, coroutine_count: int = 30):
+        await crawl_zh_async(start_id, end_id, coroutine_count)
+
+    @register_spider("zh_his", help="Crawl xueqiu ZH history (async)")
+    async def _zh_his(start_id: int = 105040, end_id: int = 1094677, coroutine_count: int = 5):
+        await crawl_zh_history_async(start_id, end_id, coroutine_count)
+
+    @register_spider("user", help="Crawl xueqiu user data (async)")
+    async def _user(start_id: int = 0, end_id: int = 500450, coroutine_count: int = 5):
+        await crawl_user_async(start_id, end_id, coroutine_count)
+
+    @register_spider("reb", help="Crawl xueqiu ZH rebalancing history")
+    async def _reb(start_id: int = 0, end_id: int = 1265067, coroutine_count: int = 5):
+        await crawl_rebalancing(start_id, end_id, coroutine_count)
+
+    @register_spider("ctb", help="Calculate portfolio stock contributions")
+    async def _ctb(start_id: int = 0, end_id: int = 0, coroutine_count: int = 0):
+        await contrib(start_id)
+
+except ImportError as exc:
+    logger.warning(f"Xueqiu module not available: {exc}")
 
 
-def connect_db(db_type: str):
-    match db_type:
-        case "mysql":
-            asyncio.run(init_db(create_db=False))
-            logger.success("Connect Mysql Success")
-
-
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
 @click.command()
 @click.argument(
     "spider_name",
-    type=click.Choice(
-        ["index", "zh_single", "zh", "zh_his", "user", "reb", "ana", "ctb", "rmi", "news", "charging_alliance"],
-        case_sensitive=False,
-    ),
+    type=click.Choice(get_spider_names(), case_sensitive=False),
     required=False,
 )
-@click.argument("start_id", type=int, required=False)
-@click.argument("end_id", type=int, required=False)
-@click.argument("coroutine_count", type=int, required=False)
+@click.argument("start_id", type=int, required=False, default=0)
+@click.argument("end_id", type=int, required=False, default=0)
+@click.argument("coroutine_count", type=int, required=False, default=5)
 def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
-    """
-    启动爬虫脚本。
+    """Run a registered spider by name.  Use --help to list available spiders."""
+    if spider_name is None:
+        click.echo(run_spider.get_help(click.Context(run_spider)))
+        return
 
-    参数：
-    SPIDER_NAME: 爬虫名称，可选值为 'index', 'zh', 'zh_async', 'zh_history_async'
-    START_ID: 起始 ID
-    END_ID: 结束 ID
-    """
-    connect_db("mysql")  # 连接数据库
+    entry = get_spider(spider_name)
+    if entry is None:
+        logger.error(f"Unknown spider: {spider_name}")
+        return
 
-    if spider_name == "rmi":
-        # 注意: Scrapy 爬虫不需要 connect_db, 除非你在 pipeline 中自己实现
-        asyncio.run(run_rmi_crawl())
-    elif spider_name == "index":
-        crawl_index()
-    elif spider_name == "zh_single":
-        crawl_zh()  # 单线程爬取
-    elif spider_name == "zh":
-        asyncio.run(crawl_zh_async(start_id, end_id, coroutine_count))
-    elif spider_name == "zh_his":
-        asyncio.run(crawl_zh_history_async(start_id, end_id, coroutine_count))
-    elif spider_name == "user":
-        asyncio.run(crawl_user_async(start_id, end_id, coroutine_count))
-    elif spider_name == "reb":
-        asyncio.run(crawl_rebalancing(start_id, end_id, coroutine_count))
-    elif spider_name == "ana":
-        asyncio.run(analyze())
-    elif spider_name == "ctb":
-        asyncio.run(contrib(start_id))
-    elif spider_name == "news":
-        asyncio.run(crawl_nea_news())
-    elif spider_name == "charging_alliance":
-        asyncio.run(charging_alliance_news())
-    else:
-        logger.error(f"未知的爬虫名称: {spider_name}")
+    sig = inspect.signature(entry.handler)
+    kwargs = {}
+    for param_name in ("start_id", "end_id", "coroutine_count"):
+        if param_name in sig.parameters:
+            kwargs[param_name] = locals()[param_name]
+
+    # Run init + spider in a single event loop so Tortoise connections survive.
+    async def _run():
+        await init_db(create_db=False)
+        logger.success("Connect Mysql Success")
+        await entry.handler(**kwargs)
+
+    asyncio.run(_run())
 
 
 if __name__ == "__main__":
     run_spider()
-
-    # import json
-    # with open('./user_id.json', 'r') as f:
-    #     data = json.load(f)
-    # with open('./user_id.json', 'w') as f:
-    #     f.write(json.dumps([item['owner_id'] for item in data]))
-    # print(len(data))
-    # from tortoise import run_async
-
-    # run_async(import_reb())

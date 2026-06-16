@@ -15,6 +15,7 @@ import alibabacloud_oss_v2 as oss
 from app.research_report.model import ResearchReport
 from common.config_loader import get_config
 from common.global_variant import close_db
+from common.spider_registry import register_spider
 
 # --- 配置 ---
 BASE_URL = "https://rmi.org.cn"
@@ -260,6 +261,7 @@ async def parse_article_page(client: httpx.AsyncClient, url: str):
         print(f"解析文章失败 {url}: {e}")
 
 
+@register_spider("rmi", help="Crawl RMI research reports and upload to OSS")
 async def main():
     """爬虫主程序"""
     init_oss_client()

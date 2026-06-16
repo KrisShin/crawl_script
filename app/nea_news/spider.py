@@ -10,6 +10,7 @@ from scrapy import Selector
 from app.common.hunyuan_api import call_hunyuan
 from app.nea_news.model import EVChargingInfrastructureData
 from common.email_util import send_email
+from common.spider_registry import register_spider
 
 URL = 'https://www.nea.gov.cn/was5/web/conwebsite/getNewsFromAllData?callback=jsonpCallback&pageNo=%d&pageSize=10&siteId=11200&keyword=%s&sort=1&isInclude=1&neac=&_=%s'
 KEYWORD = '国家能源局发布%d年%d月全国电动汽车充电设施数据'
@@ -110,6 +111,7 @@ async def parse_search() -> Tuple[Dict, EVChargingInfrastructureData]:
     return target_news, data
 
 
+@register_spider("news", help="Crawl NEA EV charging infrastructure data")
 async def main():
     news, data = await parse_search()
     if news:

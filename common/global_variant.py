@@ -22,7 +22,7 @@ ua = UserAgent(platforms='desktop')
 
 mongo_config = config.get('database.mongodb')
 
-mongo_uri = 'mongodb://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db_name)s' % {
+mongo_uri = 'mongodb://%(user)s:%(passwd)s@%(host)s:%(port)s/%(db_name)s' % {
     "user": mongo_config.user,
     "passwd": mongo_config.passwd,
     "host": mongo_config.host,
