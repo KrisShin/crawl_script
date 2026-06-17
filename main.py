@@ -103,7 +103,12 @@ def run_spider(spider_name, start_id: int, end_id: int, coroutine_count: int):
     async def _run():
         await init_db(create_db=False)
         logger.success("Connect Mysql Success")
-        await entry.handler(**kwargs)
+        try:
+            await entry.handler(**kwargs)
+        finally:
+            from tortoise import Tortoise
+
+            await Tortoise.close_connections()
 
     asyncio.run(_run())
 
