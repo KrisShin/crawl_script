@@ -7,7 +7,7 @@ from urllib.parse import quote
 from loguru import logger
 from scrapy import Selector
 
-from app.common.hunyuan_api import call_hunyuan
+from app.common.LLM_service import call_LLM
 from app.nea_news.model import EVChargingInfrastructureData
 from common.email_util import send_email
 from common.spider_registry import register_spider
@@ -62,7 +62,7 @@ async def parse_news(news: dict, data: EVChargingInfrastructureData):
     data.author = selector.xpath('//span[@class="author"]/text()').get().strip()[3:]
     data.original_text = selector.xpath('//span[@id="detailContent"]/p/text()').get().strip()
     data.link = url
-    resp_json = call_hunyuan(data.original_text, LLM_PROMPT)
+    resp_json = await call_LLM(data.original_text, LLM_PROMPT)
     for key, value in resp_json.items():
         setattr(data, key, value)
     await data.save()

@@ -41,9 +41,9 @@ oss:
   bucket_name: "bucket"
   region: "region"
 
-hunyuan:
-  TENCENTCLOUD_SECRET_ID: "id"
-  TENCENTCLOUD_SECRET_KEY: "key"
+LLM:
+  ZHIPU_API_KEY: "xxxx"
+  DEEPSEEK_API_KEY: "xxxx"
 
 charging_alliance:
   URL: "URL"

@@ -11,8 +11,7 @@ from loguru import logger
 from app.charging_alliance_news.login import wechat_login
 from app.charging_alliance_news.model import ChargingAllianceNews
 from common.email_util import send_email
-from common.global_variant import config
-from common.llm_client import LLMClient
+from app.common.LLM_service import call_LLM
 from common.repository import BaseRepository
 from common.spider_registry import register_spider
 
@@ -80,13 +79,6 @@ LLM_PROMPT = """
 """
 
 
-def _get_llm_client() -> LLMClient:
-    return LLMClient(
-        secret_id=config.hunyuan.TENCENTCLOUD_SECRET_ID,
-        secret_key=config.hunyuan.TENCENTCLOUD_SECRET_KEY,
-    )
-
-
 def _build_params(creds: Dict[str, str]) -> dict:
     """Build URL query params from in-memory credentials."""
     return {
@@ -150,10 +142,10 @@ async def parse_page(title: str, article_url: str):
             logs.append("未能提取到正文内容")
             return
 
-        logger.info("正在调用混元模型提取数据...")
-        logs.append("正在调用混元模型提取数据...")
+        logger.info("正在调用 DeepSeek 模型提取数据...")
+        logs.append("正在调用 DeepSeek 模型提取数据...")
         try:
-            resp_json = _get_llm_client().call(text_content, LLM_PROMPT)
+            resp_json = await call_LLM(text_content, LLM_PROMPT)
 
             defaults_data = {
                 **resp_json,

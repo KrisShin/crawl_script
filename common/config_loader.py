@@ -65,11 +65,11 @@ class ConfigLoader(object):
         return self._config.oss
 
     @property
-    def hunyuan(self):
+    def LLM(self):
         """访问 OSS 配置的快捷方式"""
-        if not hasattr(self._config, 'hunyuan'):
-            raise AttributeError("config.yaml 中缺少 'hunyuan' 配置节")
-        return self._config.hunyuan
+        if not hasattr(self._config, 'LLM'):
+            raise AttributeError("config.yaml 中缺少 'LLM' 配置节")
+        return self._config.LLM
 
     @property
     def charging_alliance(self):
