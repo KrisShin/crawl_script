@@ -51,6 +51,8 @@ charging_alliance:
   token: "token"
   fakeid: "id"
   fingerprint: "fingerprint"
+  biz: "MzUyMzAzMjcwNQ=="            # 公众号 __biz, 不会变
+  album_id: "2355819342136983555"    # 公众号合集 ID, 不会变
 
 yeah_mail:
   secret: "secret"

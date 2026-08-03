@@ -1,25 +1,51 @@
+"""
+充电联盟（中国充电联盟）公众号爬虫。
+
+数据来源（2026-08 起，无需登录）：
+    微信官方"合集"接口 /mp/appmsgalbum?action=getalbum
+    通过 config.yaml 中 charging_alliance.biz / album_id 定位合集；
+    翻页获取文章列表 -> 标题正则过滤 -> 检查数据库（已有则结束） -> 抓取正文 -> LLM 提取 -> 入库。
+
+说明：
+    - 原 appmsgpublish（MP 后台登录 + 编辑器插入他人文章）方案已被微信封禁，已废弃。
+    - 单线程顺序爬取，随机延时控制频率，避免被风控。
+"""
+
 import asyncio
-import json
 import random
 import re
-from typing import Dict
+from typing import List, Optional, Tuple
 
 import httpx
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from app.charging_alliance_news.login import wechat_login
 from app.charging_alliance_news.model import ChargingAllianceNews
-from common.email_util import send_email
 from app.common.LLM_service import call_LLM
+from common.email_util import send_email
+from common.global_variant import config
 from common.repository import BaseRepository
 from common.spider_registry import register_spider
 
 repo = BaseRepository(ChargingAllianceNews)
 
-APPMSG_BASE_URL = "https://mp.weixin.qq.com/cgi-bin/appmsgpublish"
+# 微信"合集"接口: 无需登录即可分页获取公众号文章列表
+ALBUM_BASE_URL = "https://mp.weixin.qq.com/mp/appmsgalbum"
 
-logs = []
+# 微信内置浏览器 UA: 免验证、免登录
+WECHAT_UA = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 "
+    "MicroMessenger/8.0.34(0x16082222) NetType/WIFI Language/zh_CN"
+)
+
+# 目标标题: "信息发布丨2026年6月全国电动汽车充换电基础设施运行情况"
+# 注意: 12月及部分历史标题不带月份(如 "信息发布丨2025年全国..."), 此时 month 默认取 12
+TITLE_PATTERN = re.compile(
+    r"^信息发布\s*[丨|:：]?\s*(\d{4})年(?:(\d{1,2})月)?全国电动汽车充换电基础设施运行情况$"
+)
+
+logs: List[str] = []
 
 LLM_PROMPT = """
 你是一个专门用于解析"电动汽车充电基础设施运行情况"新闻的**JSON转换引擎**。
@@ -79,26 +105,87 @@ LLM_PROMPT = """
 """
 
 
-def _build_params(creds: Dict[str, str]) -> dict:
-    """Build URL query params from in-memory credentials."""
-    return {
-        "sub": "list",
-        "search_field": None,
-        "begin": 0,
-        "count": "5",
-        "query": "",
-        "fakeid": creds["fakeid"],
-        "type": "101_1",
-        "free_publish_type": "1",
-        "sub_action": "list_ex",
-        "fingerprint": creds["fingerprint"],
-        "token": creds["token"],
-        "lang": "zh_CN",
+# ---------------------------------------------------------------------------
+# 列表获取（微信合集接口）
+# ---------------------------------------------------------------------------
+def _build_album_params(begin_msgid: Optional[str] = None, begin_itemidx: Optional[str] = None) -> dict:
+    """构造合集接口 URL 参数。__biz / album_id 来自 config.yaml，理论不会变更。"""
+    params = {
+        "action": "getalbum",
+        "__biz": config.charging_alliance.biz,
+        "album_id": config.charging_alliance.album_id,
+        "count": "10",
         "f": "json",
-        "ajax": "1",
     }
+    if begin_msgid:
+        params["begin_msgid"] = begin_msgid
+        params["begin_itemidx"] = begin_itemidx
+    return params
 
 
+async def fetch_album_page(
+    client: httpx.AsyncClient,
+    begin_msgid: Optional[str] = None,
+    begin_itemidx: Optional[str] = None,
+) -> Tuple[Optional[List[dict]], bool]:
+    """
+    拉取一页合集文章列表。
+
+    返回: (article_list, has_more)；失败时返回 (None, False)。
+    article_list 每项包含: title / url / create_time / msgid / itemidx / pos_num
+    """
+    params = _build_album_params(begin_msgid, begin_itemidx)
+    headers = {"User-Agent": WECHAT_UA}
+
+    for attempt in range(1, 6):
+        try:
+            response = await client.get(ALBUM_BASE_URL, params=params, headers=headers, timeout=60)
+            if response.status_code != 200:
+                logger.warning(f"合集接口状态码异常: {response.status_code}, 第{attempt}次重试")
+                await asyncio.sleep(random.uniform(2, 5))
+                continue
+
+            data = response.json()
+            ret = data["base_resp"]["ret"]
+            if ret == 200013:
+                logger.warning("合集接口流量控制(200013), 暂停 60s 后重试")
+                logs.append("合集接口流量控制(200013), 暂停 60s 后重试")
+                await asyncio.sleep(60)
+                continue
+            if ret != 0:
+                logger.warning(f"合集接口未知错误 ret={ret}, 终止爬取")
+                logs.append(f"合集接口未知错误 ret={ret}, 终止爬取")
+                return None, False
+
+            album_resp = data.get("getalbum_resp") or {}
+            article_list = album_resp.get("article_list") or []
+            has_more = album_resp.get("continue_flag") == "1"
+            return article_list, has_more
+        except Exception as e:
+            logger.warning(f"合集接口请求异常: {e}, 第{attempt}次重试")
+            await asyncio.sleep(random.uniform(2, 5))
+
+    return None, False
+
+
+def _match_target_article(title: str) -> Optional[Tuple[int, int]]:
+    """
+    匹配目标标题，返回 (year, month)。
+
+    标题通常为 "信息发布丨2026年6月全国电动汽车充换电基础设施运行情况"；
+    12月或部分历史标题可能为 "信息发布丨2025年全国电动汽车充换电基础设施运行情况"（不带月份），month 默认 12。
+    """
+    m = TITLE_PATTERN.match(title)
+    if not m:
+        return None
+    year = int(m.group(1))
+    month = int(m.group(2)) if m.group(2) else 12
+    return year, month
+
+
+# ---------------------------------------------------------------------------
+# 正文解析 & 入库
+# ---------------------------------------------------------------------------
 def extract_article_text(html_content):
     """从微信文章 HTML 中提取正文文本"""
     try:
@@ -118,25 +205,28 @@ def extract_article_text(html_content):
         return ""
 
 
-async def parse_page(title: str, article_url: str):
+async def parse_page(client: httpx.AsyncClient, title: str, article_url: str):
+    """抓取单篇文章正文 -> LLM 提取结构化数据 -> 写入数据库。"""
     try:
         logger.info(f"正在抓取文章: {article_url}")
         logs.append(f"正在抓取文章: {article_url}")
 
-        response = httpx.get(
-            article_url,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
-            },
-            timeout=10,
-        )
+        headers = {"User-Agent": WECHAT_UA}
+        text_content = ""
+        for attempt in range(1, 4):
+            try:
+                response = await client.get(article_url, headers=headers, timeout=60)
+                if response.status_code == 200:
+                    text_content = extract_article_text(response.text)
+                    if text_content:
+                        break
+                    logger.warning(f"文章正文为空, 第{attempt}次重试")
+                else:
+                    logger.warning(f"请求文章失败, 状态码: {response.status_code}, 第{attempt}次重试")
+            except Exception as e:
+                logger.warning(f"请求文章异常: {e}, 第{attempt}次重试")
+            await asyncio.sleep(random.uniform(3, 6) * attempt)
 
-        if response.status_code != 200:
-            logger.error(f"请求文章失败, 状态码: {response.status_code}")
-            logs.append(f"请求文章失败, 状态码: {response.status_code}")
-            return
-
-        text_content = extract_article_text(response.text)
         if not text_content:
             logger.warning("未能提取到正文内容")
             logs.append("未能提取到正文内容")
@@ -192,70 +282,87 @@ async def parse_page(title: str, article_url: str):
         logs.append(f"抓取文章发生异常: {e}")
 
 
-async def parse_list(begin: int, creds: Dict[str, str], client: httpx.AsyncClient):
-    params = _build_params(creds)
-    headers = {"Cookie": creds["cookie"]}
+# ---------------------------------------------------------------------------
+# 主流程: 合集翻页 -> 标题过滤 -> 查库 -> 抓取
+# ---------------------------------------------------------------------------
+async def parse_list(client: httpx.AsyncClient):
+    """
+    单线程顺序爬取。
 
+    流程（合集按最新在前排列）:
+      翻页获取列表 -> 匹配目标标题 -> 检查数据库:
+        - 已存在: 说明该月数据已入库, 更早的文章必然也已处理过, 结束爬虫
+        - 不存在: 抓取正文 -> LLM 提取 -> 入库, 然后继续往后翻
+    """
+    logger.info("开始爬取充电联盟合集文章列表")
+    logs.append("开始爬取充电联盟合集文章列表")
+
+    begin_msgid = None
+    begin_itemidx = None
+    page = 0
     while True:
-        logger.info(f"start crawling begin: {begin}")
-        logs.append(f"start crawling begin: {begin}")
-        params["begin"] = begin
+        page += 1
+        logger.info(f"正在翻页: 第 {page} 页 (begin_msgid={begin_msgid}, begin_itemidx={begin_itemidx})")
+        logs.append(f"正在翻页: 第 {page} 页 (begin_msgid={begin_msgid}, begin_itemidx={begin_itemidx})")
 
-        response = await client.get(APPMSG_BASE_URL, params=params, headers=headers, timeout=None)
-        await asyncio.sleep(random.randint(1, 3))
-
-        if response.status_code != 200:
-            await asyncio.sleep(3600)
-            continue
-
-        data = response.json()
-        ret = data["base_resp"]["ret"]
-        if ret == 200013:
-            logger.warning("流量控制, 停止一小时后尝试")
-            logs.append("流量控制, 停止一小时后尝试")
-            await asyncio.sleep(3600)
-            continue
-        elif ret == 200003:
-            logger.warning("Cookie过期")
-            logs.append("Cookie过期")
+        article_list, has_more = await fetch_album_page(client, begin_msgid, begin_itemidx)
+        if article_list is None:
+            logger.error("获取合集列表失败, 终止爬虫")
+            logs.append("获取合集列表失败, 终止爬虫")
             return
-        elif ret != 0:
-            logger.warning(f"未知错误 ret={ret}, 终止尝试")
-            logs.append(f"未知错误 ret={ret}, 终止尝试")
+        if not article_list:
+            logger.info("合集无更多文章, 结束爬虫")
+            logs.append("合集无更多文章, 结束爬虫")
             return
 
-        publish_page = json.loads(data["publish_page"])
-        if not publish_page:
-            logger.info(f"爬取已完成, 共{begin}条数据")
-            logs.append(f"爬取已完成, 共{begin}条数据")
+        for item in article_list:
+            title = item.get("title", "")
+            url = item.get("url", "")
+            match = _match_target_article(title)
+            if not match:
+                continue
+
+            year, month = match
+            logger.info(f"命中目标文章: {title}")
+            logs.append(f"命中目标文章: {title}")
+
+            if await repo.exists(year=year, month=month):
+                logger.success(f"数据已存在: {year}年{month}月, 结束爬虫")
+                logs.append(f"数据已存在: {year}年{month}月, 结束爬虫")
+                return
+
+            await parse_page(client, title, url)
+            # 单线程 + 随机延时, 控制请求频率
+            await asyncio.sleep(random.uniform(3, 6))
+
+        if not has_more:
+            logger.info("合集翻页完成, 未发现更多目标文章, 结束爬虫")
+            logs.append("合集翻页完成, 未发现更多目标文章, 结束爬虫")
             return
 
-        for pl in publish_page["publish_list"]:
-            pi = json.loads(pl["publish_info"])
-            for news in pi["appmsgex"]:
-                title = news["title"]
-                if title.startswith("信息发布") and title.endswith("全国电动汽车充换电基础设施运行情况"):
-                    if await repo.exists(link=news["link"]):
-                        logger.warning("之前数据已爬取, 结束爬虫")
-                        logs.append("之前数据已爬取, 结束爬虫")
-                        return
-                    await parse_page(title, news["link"])
+        last = article_list[-1]
+        next_msgid = last.get("msgid")
+        next_itemidx = last.get("itemidx")
+        if next_msgid == begin_msgid:
+            logger.warning("翻页游标未前进, 终止爬虫避免死循环")
+            logs.append("翻页游标未前进, 终止爬虫避免死循环")
+            return
+        begin_msgid = next_msgid
+        begin_itemidx = next_itemidx
 
-        begin += 5
-        await asyncio.sleep(random.randint(10, 30))
+        # 翻页间隔随机延时
+        await asyncio.sleep(random.uniform(1.5, 3.5))
 
 
 @register_spider("charging_alliance", help="Crawl charging alliance WeChat news")
 async def main():
-    # 1. Open browser, scan QR, grab credentials
-    creds = await wechat_login()
+    # 不再需要扫码登录, 直接使用微信合集接口
+    logger.info("charging_alliance 爬虫启动 (微信合集接口, 无需登录)")
+    logs.append("charging_alliance 爬虫启动 (微信合集接口, 无需登录)")
 
-    # 2. Start crawling with those credentials
-    begin = 0
-    logger.info(f"begin: {begin}")
-    logs.append(f"begin: {begin}")
-    client = httpx.AsyncClient()
-    await parse_list(begin, creds, client)
+    async with httpx.AsyncClient() as client:
+        await parse_list(client)
+
     await send_email("krisshin@88.com", "充电联盟爬虫结束", "\n".join(logs), False)
 
 

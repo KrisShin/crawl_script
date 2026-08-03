@@ -8,7 +8,7 @@ from openai import AsyncOpenAI
 
 # === 核心配置区 ===
 LLM_CONFIG = {
-    "base_url": "https://api.deepseek.com/",
+    "base_url": "http://60.205.114.252:18999/v1",
     "api_key": config.LLM.DEEPSEEK_API_KEY,
     "model": "deepseek-v4-flash",
 }
