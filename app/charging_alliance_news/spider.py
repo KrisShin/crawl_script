@@ -360,7 +360,8 @@ async def main():
     logger.info("charging_alliance 爬虫启动 (微信合集接口, 无需登录)")
     logs.append("charging_alliance 爬虫启动 (微信合集接口, 无需登录)")
 
-    async with httpx.AsyncClient() as client:
+    # follow_redirects=True: 合集返回的 http:// 文章链接会 301 跳转到 https://, 必须跟随重定向
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         await parse_list(client)
 
     await send_email("krisshin@88.com", "充电联盟爬虫结束", "\n".join(logs), False)
